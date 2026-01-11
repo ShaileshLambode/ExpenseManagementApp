@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navigation_dashboard">
+
+    <fragment
+        android:id="@+id/navigation_dashboard"
+        android:name="com.example.expensemanagementapp.ui.dashboard.DashboardFragment"
+        android:label="@string/dashboard"
+        tools:layout="@layout/fragment_dashboard" />
+
+    <fragment
+        android:id="@+id/navigation_expenses"
+        android:name="com.example.expensemanagementapp.ui.expenses.ExpensesFragment"
+        android:label="@string/expenses"
+        tools:layout="@layout/fragment_expenses" />
+
+    <fragment
+        android:id="@+id/navigation_plans"
+        android:name="com.example.expensemanagementapp.ui.plans.PlansFragment"
+        android:label="@string/plans"
+        tools:layout="@layout/fragment_plans" />
+
+    <fragment
+        android:id="@+id/navigation_history"
+        android:name="com.example.expensemanagementapp.ui.history.HistoryFragment"
+        android:label="@string/history"
+        tools:layout="@layout/fragment_history" />
+
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.example.expensemanagementapp.ui.profile.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="com.example.expensemanagementapp.ui.settings.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_placeholder" />
+
+    <fragment
+        android:id="@+id/navigation_help"
+        android:name="com.example.expensemanagementapp.ui.help.HelpFragment"
+        android:label="Help"
+        tools:layout="@layout/fragment_placeholder" />
+
+    <fragment
+        android:id="@+id/navigation_backup"
+        android:name="com.example.expensemanagementapp.ui.backup.BackupFragment"
+        android:label="Backup &amp; Restore"
+        tools:layout="@layout/fragment_backup" />
+
+    <fragment
+        android:id="@+id/navigation_about"
+        android:name="com.example.expensemanagementapp.ui.settings.AboutFragment"
+        android:label="About Us"
+        tools:layout="@layout/fragment_about" />
+</navigation>

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="?android:colorBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="How to Use Mulya"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 1: Intro -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1. Introduction"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mulya is a personal finance app designed to help you track expenses, income, and plans offline. No login is required, ensuring your data stays private on your device."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 2: Dashboard -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2. Dashboard"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="The Dashboard gives you a quick snapshot of your finances:\n• Total Balance: Combined Bank and Cash funds.\n• Today's Expenses: What you've spent today.\n• Summary: Visual Donut chart showing income vs expense.\n• Spending Trend: A smooth Sparkline graph of your transaction history.\n\nAll values and charts update automatically as you add transactions."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 3: Expenses & Revenue -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="3. Expenses &amp; Revenue"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="To record money flow:\n1. Tap the Add button.\n2. Choose 'Expense' (money out) or 'Income' (money in).\n3. Select Mode (Bank or Cash).\n4. Enter the amount and select a category.\n\nExpenses reduce your balance, while Revenue increases it."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 4: Plans -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="4. Plans"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Plans help you track future payments or receivables.\n• Tap any plan to Edit its details (Amount, Date, etc).\n• Tap the trash icon to Delete a plan.\n• Mark as 'Completed' using the checkbox.\n\nCompleting a plan automatically updates your balance and adds it to your History."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 5: History -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="5. History"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View all past transactions grouped by date. Use the filter chips to see only Today, Week, or Month. Tap any transaction to Edit or Delete it. You can Undo a deletion immediately if needed."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 6: Export -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="6. Export"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Need a report? Export your transactions to CSV or PDF via the Settings or History page. Exports respect your currently selected date range filters."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 7: Backup & Restore -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="7. Backup &amp; Restore"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Protect your data by creating backups in Settings. To restore, select a valid backup file. \n\nWarning: Restoring replaces all current data on the device. Always back up before uninstalling or switching devices."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 8: Theme & Settings -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="8. Theme &amp; Settings"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Customize your experience in Settings:\n• Switch between Light, Dark, or System theme.\n• Change currency or number format.\n• Set a default account (Bank/Cash).\n• Toggle 'Allow Negative Balance' preference."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 9: Profile -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="9. Profile"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Personalize your app experience in the Profile section:\n• Add your Name, City, State, and Mobile.\n• Select your Gender and Date of Birth.\n• Set a Profile Picture.\n\nYour profile details are displayed in the navigation header."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 10: Privacy -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="10. Privacy"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Your privacy is paramount. Mulya works offline-first. All data is stored locally on your device. We do not track you, show ads, or send your data to any server."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="48dp"/>
+
+    </LinearLayout>
+</ScrollView>

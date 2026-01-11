@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Core Brand Colors -->
+    <color name="midnight_blue_primary">#283593</color>
+    <color name="midnight_blue_dark">#1A237E</color>
+    <color name="muted_violet">#9575CD</color>
+    <color name="soft_gold">#FFD54F</color>
+
+    <!-- Neutrals - Light -->
+    <color name="light_background">#F5F5F7</color>
+    <color name="light_surface">#FFFFFF</color>
+    <color name="light_text_primary">#212121</color>
+    <color name="light_text_secondary">#757575</color>
+
+    <!-- Neutrals - Dark -->
+    <!-- Neutrals - Dark -->
+    <color name="dark_background">#1F1F1F</color>
+    <color name="dark_surface">#2C2C2C</color>
+    <color name="dark_surface_elevated">#383838</color>
+    <color name="dark_text_primary">#F5F5F5</color>
+    <color name="dark_text_secondary">#B0BEC5</color>
+
+    <!-- Functional Colors -->
+    <color name="expense_red">#E57373</color>
+    <color name="income_green">#81C784</color>
+    <color name="neutral_grey">#BDBDBD</color>
+
+    <!-- Category Palette -->
+    <color name="cat_food">#AED581</color>
+    <color name="cat_travel">#4FC3F7</color>
+    <color name="cat_bills">#FFB74D</color>
+    <color name="cat_shopping">#CE93D8</color>
+    <color name="cat_others">#90A4AE</color>
+
+    <!-- Legacy / Material Standard Mappings (if needed, but themes.xml handles most) -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="chip_background">#E0E0E0</color>
+    <color name="chip_text">#212121</color>
+    
+    <!-- Semantic Colors -->
+    <color name="color_date_header_background">#EFEEEE</color>
+    <color name="color_card_background_charcoal">@color/white</color>
+</resources>

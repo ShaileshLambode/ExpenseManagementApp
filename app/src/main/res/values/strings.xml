@@ -1,0 +1,129 @@
+<resources>
+    <string name="app_name">Mulya</string>
+    <string name="dashboard">Dashboard</string>
+    <string name="expenses">Expenses</string>
+    <string name="plans">Plans</string>
+    <string name="history">History</string>
+    <string name="bank_balance">Bank Balance</string>
+    <string name="cash_balance">Cash Balance</string>
+    <string name="total_balance">Total Balance</string>
+    <string name="adjust_balance">Adjust Balance</string>
+    <string name="add_expense">Add Expense</string>
+    <string name="title">Title</string>
+    <string name="amount">Amount</string>
+    <string name="mode">Mode</string>
+    <string name="category">Category</string>
+    <string name="date">Date</string>
+    <string name="save">Save</string>
+    <string name="bank">Bank</string>
+    <string name="cash">Cash</string>
+    <string name="pay">Pay</string>
+    <string name="receive">Receive</string>
+    <string name="pending">Pending</string>
+    <string name="completed">Completed</string>
+    <string name="add_plan">Add Plan</string>
+    <string name="due_date">Due Date</string>
+    <string name="setup_initial_balances">Setup Initial Balances</string>
+    <string name="enter_bank_amount">Enter Bank Amount</string>
+    <string name="enter_cash_amount">Enter Cash Amount</string>
+    <string name="start">Start</string>
+    <string name="save_expense">Save Expense</string>
+    <string name="save_revenue">Save Revenue</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="edit_plan">Edit Plan</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Plans -->
+    <string name="error_enter_details">Please enter title, amount and category</string>
+    <string name="error_select_date">Please select a due date</string>
+    <string name="plan_added">Plan Added</string>
+    <string name="plan_updated">Plan Updated</string>
+    <string name="plan_completed">Plan Completed!</string>
+    <string name="no_due_date">No due date</string>
+    <string name="due_on">Due: %s</string>
+
+    <!-- Backup -->
+    <string name="permission_required_backup">Permission required to save backup</string>
+    <string name="backup_successful">Backup Successful</string>
+    <string name="backup_saved_msg">Backup saved to Downloads folder:\n%s</string>
+    <string name="backup_failed">Backup Failed: %s</string>
+    <string name="restore_confirm_title">Confirm Restore</string>
+    <string name="restore_warning">⚠️ WARNING\n\nRestoring will PERMANENTLY DELETE all current data and replace it with the backup.\n\nAre you sure you want to proceed?</string>
+    <string name="restore_action">Restore</string>
+    <string name="restore_success">Restore Successful. Restarting...</string>
+    <string name="restore_failed">Restore Failed. Data unchanged.</string>
+    <string name="share_backup">Share Backup</string>
+    <string name="cannot_read_file">Could not read file</string>
+    <string name="invalid_backup_file">Invalid Backup File</string>
+
+    <!-- Dashboard/Misc -->
+    <string name="guest_user">Guest User</string>
+    <string name="personal_user">Personal User</string>
+    <string name="no_data_period">No data for this period</string>
+    <string name="currency_symbol">₹</string>
+    <string name="delete">Delete</string>
+    <string name="confirm_delete_plan">Are you sure you want to delete this plan?</string>
+    <string name="please_fill_all_fields">Please fill all fields</string>
+    <string name="revenue_added">Revenue Added</string>
+    <string name="expense_added">Expense Added</string>
+    <string name="update">Update</string>
+    <string name="whats_new_title">What\'s New (v1.52)</string>
+    <string name="whats_new_content">• Visuals: Smooth Sparkline &amp; Donut Charts\n• Plans: Edit &amp; Delete Plans\n• Core: Atomic Transactions (Data Safety)\n• Feature: Backup &amp; Restore\n• Profile: Added Gender &amp; Details\n• Polish: Dark Mode fixes &amp; Performance</string>
+
+    <!-- Settings & Export -->
+    <string name="clear_all_data">Clear All Data</string>
+    <string name="clear_data_warning">This will permanently delete all data including transactions, balances, and profile. This action cannot be undone.</string>
+    <string name="clear_and_restart">Clear &amp; Restart</string>
+    <string name="data_cleared">All data cleared</string>
+    <string name="no_transactions_export">No transactions found to export</string>
+    <string name="saved_to_downloads">Saved to Downloads: %s</string>
+    <string name="save_failed">Save failed: %s</string>
+    <string name="export_failed">Export for share failed: %s</string>
+    <string name="financial_records_export">Financial Records Export</string>
+    <string name="share_records">Share Financial Records</string>
+    
+    <!-- Profile -->
+    <string name="profile_updated">Profile updated successfully</string>
+    <string name="digits_only">Digits only</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+
+    <!-- Backup UI -->
+    <string name="backup_data_title">Backup Data</string>
+    <string name="backup_desc">Create a secure local backup of your financial data, including profiles and settings.</string>
+    <string name="create_backup">Create Backup</string>
+    <string name="restore_data_title">Restore Data</string>
+    <string name="restore_desc">Restore data from a backup file. \n\n⚠️ WARNING: This will overwrite all current data permanently.</string>
+    <string name="restore_backup">Restore Backup</string>
+
+    <!-- Export Dialog -->
+    <string name="export_all_data">Export All Data</string>
+    <string name="export_desc">Export all your financial records to a file.</string>
+    <string name="select_format">Select Format:</string>
+    <string name="format_csv">CSV (Comma Separated Values)</string>
+    <string name="format_pdf">PDF Document</string>
+    <string name="action_share">Share</string>
+    <string name="action_save_downloads">Save to Downloads</string>
+
+    <!-- Backup Logic -->
+    <string name="backup_restore">Backup &amp; Restore</string>
+
+    <!-- Profile Form -->
+    <string name="hint_name">Full Name</string>
+    <string name="label_gender">Gender</string>
+    <string name="hint_dob">Date of Birth</string>
+    <string name="hint_mobile">Mobile Number</string>
+    <string name="hint_city">City</string>
+    <string name="hint_state">State</string>
+    <string name="action_save_profile">Save Profile</string>
+    
+    <!-- Missing Resources Fixed -->
+    <string name="ok">OK</string>
+    <string name="type">Type</string>
+    <string name="export_format">Select Format</string>
+    <string name="export">Export</string>
+    <string name="export_method">Export Method</string>
+    <string name="save_to_downloads">Save to Downloads</string>
+    <string name="share">Share</string>
+</resources>

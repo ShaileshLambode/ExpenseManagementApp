@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="chip_background">#383838</color> <!-- charcoal_elevated -->
+    <color name="chip_text">#F5F5F5</color>
+    
+    <!-- Semantic Colors -->
+    <color name="color_date_header_background">#383838</color>
+    <color name="color_card_background_charcoal">#2C2C2C</color>
+</resources>

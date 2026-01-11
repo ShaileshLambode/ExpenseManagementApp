@@ -1,0 +1,19 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.ExpenseManagementApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Brand Colors -->
+        <item name="colorPrimary">@color/midnight_blue_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/muted_violet</item>
+        <item name="colorOnSecondary">@color/dark_surface</item>
+        <item name="colorTertiary">@color/soft_gold</item>
+        
+        <!-- UI Colors -->
+        <item name="android:colorBackground">@color/dark_background</item>
+        <item name="colorOnBackground">@color/dark_text_primary</item>
+        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorOnSurface">@color/dark_text_primary</item>
+        <item name="colorError">@color/expense_red</item>
+        <item name="colorOnError">@color/dark_background</item>
+    </style>
+</resources>

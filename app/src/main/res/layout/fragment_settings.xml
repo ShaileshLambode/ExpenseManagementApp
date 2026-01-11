@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:fillViewport="true"
+    tools:context=".ui.settings.SettingsFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Appearance -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="Appearance" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/SettingsCard">
+
+            <LinearLayout
+                style="@style/SettingsCardContent">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Theme"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                    android:textStyle="bold"/>
+
+                <RadioGroup
+                    android:id="@+id/rgTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <RadioButton
+                        android:id="@+id/rbThemeLight"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Light" />
+
+                    <RadioButton
+                        android:id="@+id/rbThemeDark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Dark" />
+
+                    <RadioButton
+                        android:id="@+id/rbThemeSystem"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="System Default" />
+                </RadioGroup>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Currency & Format -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="Currency &amp; Format" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/SettingsCard">
+
+            <LinearLayout
+                style="@style/SettingsCardContent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Currency Symbol"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+
+                    <EditText
+                        android:id="@+id/etCurrencySymbol"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:hint="₹"
+                        android:inputType="text"
+                        android:maxLength="3"
+                        android:maxLines="1" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Number Format"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                    android:layout_marginBottom="4dp"/>
+                
+                <RadioGroup
+                    android:id="@+id/rgNumberFormat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    
+                    <RadioButton
+                        android:id="@+id/rbFormatIndian"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Indian (1,00,000)" />
+                    
+                    <RadioButton
+                        android:id="@+id/rbFormatInternational"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="International (100,000)" />
+                </RadioGroup>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+
+        <!-- Financial Preferences -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="Financial Preferences" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/SettingsCard">
+
+            <LinearLayout
+                style="@style/SettingsCardContent">
+
+                 <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Default Account"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Subhead"/>
+
+                 <RadioGroup
+                    android:id="@+id/rgDefaultAccount"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioButton
+                        android:id="@+id/rbAccountBank"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bank"
+                        android:layout_marginEnd="16dp"/>
+
+                    <RadioButton
+                        android:id="@+id/rbAccountCash"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cash" />
+                </RadioGroup>
+
+                <View
+                    style="@style/Divider"/>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchNegativeBalance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Allow Negative Balance" />
+
+                 <TextView
+                    style="@style/SettingsCaption"
+                    android:text="If OFF, expenses will be blocked if insufficient funds." />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Notifications -->
+         <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="Notifications &amp; Alerts" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/SettingsCard">
+
+            <LinearLayout
+                style="@style/SettingsCardContent">
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchLowBalance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Low Balance Alert" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilLowBalanceThreshold"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Threshold Amount"
+                    android:visibility="gone"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginBottom="8dp">
+                    
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLowBalanceThreshold"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"/>
+                </com.google.android.material.textfield.TextInputLayout>
+                
+                <View style="@style/Divider"/>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchBudgetWarning"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Budget Warning" />
+
+                 <TextView
+                    style="@style/SettingsCaption"
+                    android:text="Notify when spending crosses % limit." />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Data & Privacy -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="Data &amp; Privacy" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/SettingsCard">
+
+             <LinearLayout
+                style="@style/SettingsCardContent">
+
+                <TextView
+                    android:id="@+id/btnBackup"
+                    style="@style/SettingsActionItem"
+                    android:text="Backup &amp; Restore"
+                    app:drawableStartCompat="@drawable/ic_menu_camera" 
+                    android:drawablePadding="12dp"/>
+                    <!-- Using generic icon if backup icon missing, ideally add ic_backup -->
+
+                <View style="@style/Divider"/>
+
+                 <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switchAutoBackup"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Auto Backup Reminder" />
+                 <TextView
+                    style="@style/SettingsCaption"
+                    android:text="Monthly reminder to back up data." />
+
+                <View style="@style/Divider"/>
+
+                <TextView
+                    android:id="@+id/btnExport"
+                    style="@style/SettingsActionItem"
+                    android:text="Export Data (CSV/PDF)"
+                    app:drawableStartCompat="@drawable/ic_menu_camera"
+                    android:drawablePadding="12dp"/>
+
+                <View style="@style/Divider"/>
+
+                <TextView
+                    android:id="@+id/btnClearData"
+                    style="@style/SettingsActionItem"
+                    android:text="Clear All Data"
+                    android:textColor="@color/expense_red"
+                    app:drawableStartCompat="@android:drawable/ic_menu_delete"
+                    android:drawableTint="@color/expense_red"
+                    android:drawablePadding="12dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- About -->
+        <TextView
+            style="@style/SettingsSectionHeader"
+            android:text="About" />
+        
+        <com.google.android.material.card.MaterialCardView
+            style="@style/SettingsCard">
+            
+            <LinearLayout
+                style="@style/SettingsCardContent">
+                
+                <TextView
+                    android:id="@+id/btnHelp"
+                    style="@style/SettingsActionItem"
+                    android:text="Help &amp; Docs"
+                    app:drawableStartCompat="@drawable/ic_menu_camera"
+                    android:drawablePadding="12dp"/>
+
+                <View style="@style/Divider"/>
+
+                <TextView
+                    android:id="@+id/btnAbout"
+                    style="@style/SettingsActionItem"
+                    android:text="About Us"
+                    app:drawableStartCompat="@drawable/ic_menu_camera"
+                    android:drawablePadding="12dp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+         <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mulya"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:textColor="?attr/colorPrimary"/>
+             
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Version 1.0.0 (Build 100)"
+                android:textSize="12sp"
+                android:layout_marginBottom="4dp"/>
+            
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Developer: Messiah"
+                android:textSize="12sp"
+                android:textStyle="bold"/>
+
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Simple. Honest. Professional."
+                android:layout_marginTop="8dp"
+                android:textStyle="italic"
+                android:textColor="?android:attr/textColorSecondary"/>
+                
+             <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="© Messiah"
+                android:layout_marginTop="16dp"
+                android:textSize="12sp"
+                android:textColor="?android:attr/textColorTertiary"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

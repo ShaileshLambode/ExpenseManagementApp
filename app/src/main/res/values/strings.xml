@@ -126,4 +126,9 @@
     <string name="export_method">Export Method</string>
     <string name="save_to_downloads">Save to Downloads</string>
     <string name="share">Share</string>
+
+    <string-array name="transaction_modes">
+        <item>BANK</item>
+        <item>CASH</item>
+    </string-array>
 </resources>

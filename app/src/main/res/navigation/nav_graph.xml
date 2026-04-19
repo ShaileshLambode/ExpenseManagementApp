@@ -3,30 +3,36 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/navigation_dashboard">
+    app:startDestination="@id/navigation_home">
 
     <fragment
-        android:id="@+id/navigation_dashboard"
+        android:id="@+id/navigation_home"
         android:name="com.example.expensemanagementapp.ui.dashboard.DashboardFragment"
-        android:label="@string/dashboard"
+        android:label="Home"
         tools:layout="@layout/fragment_dashboard" />
 
     <fragment
-        android:id="@+id/navigation_expenses"
+        android:id="@+id/navigation_analytics"
+        android:name="com.example.expensemanagementapp.ui.analytics.AnalyticsFragment"
+        android:label="Analytics"
+        tools:layout="@layout/fragment_placeholder" />
+
+    <fragment
+        android:id="@+id/navigation_add"
         android:name="com.example.expensemanagementapp.ui.expenses.ExpensesFragment"
-        android:label="@string/expenses"
+        android:label="Add Transaction"
         tools:layout="@layout/fragment_expenses" />
 
     <fragment
-        android:id="@+id/navigation_plans"
-        android:name="com.example.expensemanagementapp.ui.plans.PlansFragment"
-        android:label="@string/plans"
-        tools:layout="@layout/fragment_plans" />
+        android:id="@+id/navigation_goals"
+        android:name="com.example.expensemanagementapp.ui.goals.GoalsFragment"
+        android:label="Goals"
+        tools:layout="@layout/fragment_placeholder" />
 
     <fragment
         android:id="@+id/navigation_history"
         android:name="com.example.expensemanagementapp.ui.history.HistoryFragment"
-        android:label="@string/history"
+        android:label="History"
         tools:layout="@layout/fragment_history" />
 
     <fragment
@@ -58,4 +64,10 @@
         android:name="com.example.expensemanagementapp.ui.settings.AboutFragment"
         android:label="About Us"
         tools:layout="@layout/fragment_about" />
+
+    <fragment
+        android:id="@+id/nav_plans_dest"
+        android:name="com.example.expensemanagementapp.ui.plans.PlansFragment"
+        android:label="Plans"
+        tools:layout="@layout/fragment_plans" />
 </navigation>

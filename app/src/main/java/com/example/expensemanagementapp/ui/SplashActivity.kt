@@ -13,8 +13,16 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
 
         Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
+            val prefManager = com.example.expensemanagementapp.data.PreferenceManager.getInstance(this)
+            
+            val intent = if (prefManager.isFirstLaunch()) {
+                Intent(this, com.example.expensemanagementapp.ui.onboarding.OnboardingActivity::class.java)
+            } else {
+                Intent(this, MainActivity::class.java)
+            }
+            
+            startActivity(intent)
             finish()
-        }, 2000) // 2 second delay
+        }, 2500) // Slightly longer splash for premium feel
     }
 }

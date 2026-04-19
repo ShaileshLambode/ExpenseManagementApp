@@ -48,7 +48,11 @@ class ProfileFragment : Fragment() {
                     // Might fail depending on source app
                 }
                 
-                binding.ivProfileImage.setImageURI(uri)
+                try {
+                    binding.ivProfileImage.setImageURI(uri)
+                } catch (e: Exception) {
+                    binding.ivProfileImage.setImageResource(R.drawable.ic_menu_camera)
+                }
             }
         }
     }
@@ -64,8 +68,13 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val dao = AppDatabase.getDatabase(requireContext()).expenseDao()
-        val repository = ExpenseRepository(dao)
+        val db = AppDatabase.getDatabase(requireContext())
+        val repository = ExpenseRepository(
+            db.expenseDao(),
+            db.budgetProfileDao(),
+            db.goalDao(),
+            db.recurringTransactionDao()
+        )
         val factory = ViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[ProfileViewModel::class.java]
 
@@ -127,8 +136,12 @@ class ProfileFragment : Fragment() {
                 }
                 
                 if (!it.imageUri.isNullOrEmpty()) {
-                    selectedImageUri = Uri.parse(it.imageUri)
-                    binding.ivProfileImage.setImageURI(selectedImageUri)
+                    try {
+                        selectedImageUri = Uri.parse(it.imageUri)
+                        binding.ivProfileImage.setImageURI(selectedImageUri)
+                    } catch (e: Exception) {
+                        binding.ivProfileImage.setImageResource(R.drawable.ic_menu_camera)
+                    }
                 }
                 
                 if (it.gender == "Male") {

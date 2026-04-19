@@ -132,6 +132,29 @@
                 android:text="@string/cash"/>
         </RadioGroup>
 
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/switchIsRecurring"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Recurring Transaction"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutFrequency"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Frequency"
+            android:visibility="gone"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_marginBottom="8dp">
+
+            <AutoCompleteTextView
+                android:id="@+id/etPlanFrequency"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
         <Button
             android:id="@+id/btnAddPlan"
             android:layout_width="match_parent"
@@ -154,9 +177,27 @@
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
             android:overScrollMode="never"
-            android:paddingBottom="80dp"
             android:clipToPadding="false"
             tools:listitem="@layout/item_plan"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Active Recurring Transactions"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvRecurring"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never"
+            android:paddingBottom="80dp"
+            android:clipToPadding="false"
+            tools:listitem="@layout/item_recurring"/>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

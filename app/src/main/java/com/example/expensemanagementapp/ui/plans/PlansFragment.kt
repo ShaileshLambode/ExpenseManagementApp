@@ -39,8 +39,13 @@ class PlansFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val dao = AppDatabase.getDatabase(requireContext()).expenseDao()
-        val repository = ExpenseRepository(dao)
+        val db = AppDatabase.getDatabase(requireContext())
+        val repository = ExpenseRepository(
+            db.expenseDao(),
+            db.budgetProfileDao(),
+            db.goalDao(),
+            db.recurringTransactionDao()
+        )
         val factory = ViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[PlansViewModel::class.java]
 
@@ -90,6 +95,25 @@ class PlansFragment : Fragment() {
             adapter.submitList(plans)
         }
 
+        // Recurring Adapter
+        val rvRecurring = view.findViewById<RecyclerView>(R.id.rvRecurring)
+        val recurringAdapter = RecurringAdapter(
+            onDelete = { recurring ->
+                com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Delete Recurring Transaction")
+                    .setMessage("Are you sure you want to stop this recurring transaction?")
+                    .setPositiveButton("Stop") { _, _ -> viewModel.deleteRecurring(recurring) }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        )
+        rvRecurring.layoutManager = LinearLayoutManager(context)
+        rvRecurring.adapter = recurringAdapter
+
+        viewModel.recurringTransactions.observe(viewLifecycleOwner) { recurring ->
+            recurringAdapter.submitList(recurring)
+        }
+
         // Switch Logic
         switchUndefinedDate.setOnCheckedChangeListener { _, isChecked ->
             etDate.isEnabled = !isChecked
@@ -118,11 +142,31 @@ class PlansFragment : Fragment() {
             datePickerDialog.show()
         }
 
+        val switchIsRecurring = view.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.switchIsRecurring)
+        val layoutFrequency = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.layoutFrequency)
+        val etFrequency = view.findViewById<android.widget.AutoCompleteTextView>(R.id.etPlanFrequency)
+
+        // Frequency Options
+        val frequencies = arrayOf("DAILY", "WEEKLY", "MONTHLY", "YEARLY")
+        val freqAdapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, frequencies)
+        etFrequency.setAdapter(freqAdapter)
+        etFrequency.setText(frequencies[2], false) // Default Monthly
+
+        switchIsRecurring.setOnCheckedChangeListener { _, isChecked ->
+            layoutFrequency.visibility = if (isChecked) View.VISIBLE else View.GONE
+            switchUndefinedDate.isEnabled = !isChecked
+            if (isChecked) {
+                switchUndefinedDate.isChecked = false
+                etDate.isEnabled = true
+            }
+        }
+
         btnAdd.setOnClickListener {
             val title = etTitle.text.toString()
             val amount = etAmount.text.toString().toDoubleOrNull()
             val category = actvCategory.text.toString()
             val isUndefinedDate = switchUndefinedDate.isChecked
+            val isRecurring = switchIsRecurring.isChecked
 
             if (title.isBlank() || amount == null || category.isBlank()) {
                 Toast.makeText(context, getString(R.string.error_enter_details), Toast.LENGTH_SHORT).show()
@@ -137,16 +181,24 @@ class PlansFragment : Fragment() {
             val type = if (rbPay.isChecked) "PAY" else "RECEIVE"
             val mode = if (rbPlanBank.isChecked) "BANK" else "CASH"
 
-            viewModel.addPlan(title, amount, mode, category, type, selectedDueDate)
+            if (isRecurring) {
+                val frequency = etFrequency.text.toString()
+                viewModel.addRecurring(title, amount, mode, category, type, frequency, selectedDueDate ?: System.currentTimeMillis())
+                Toast.makeText(context, "Recurring plan added", Toast.LENGTH_SHORT).show()
+            } else {
+                viewModel.addPlan(title, amount, mode, category, type, selectedDueDate)
+                Toast.makeText(context, getString(R.string.plan_added), Toast.LENGTH_SHORT).show()
+            }
             
+            // Clear Fields
             etTitle.text?.clear()
             etAmount.text?.clear()
             actvCategory.text.clear()
             etDate.text?.clear()
             selectedDueDate = null
             switchUndefinedDate.isChecked = false
+            switchIsRecurring.isChecked = false
             etDate.isEnabled = true
-            Toast.makeText(context, getString(R.string.plan_added), Toast.LENGTH_SHORT).show()
         }
     }
 

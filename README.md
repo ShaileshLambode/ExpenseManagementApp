@@ -6,25 +6,29 @@ Mulya is a privacy-focused, offline-first personal finance application for Andro
 
 ## ✨ Features
 
-- **Dashboard**: Visual overview of your financial health with Sparkline and Donut charts.
-- **Transaction Tracking**: Easily record Expenses (Bank/Cash) and Revenue.
-- **Plans**: Schedule future payments and track receivables.
+- **Multiple Budget Profiles**: Create and switch between distinct financial profiles (e.g., Personal, Business) seamlessly.
+- **Dashboard**: Visual overview of your financial health with sparklines, donut charts, and an integrated "Upcoming Actions" summary.
+- **Transaction Tracking**: Easily record Expenses (Bank/Cash) and Revenue using a custom-built numeric keypad.
+- **Savings Goals**: Set up and track custom savings goals. Adding money to goals automatically updates your balances.
+- **Recurring Transactions**: Automate your subscriptions, bills, or regular income with customizable frequencies.
+- **Upcoming Actions**: Schedule future payments and track receivables directly from the dashboard bottom sheets.
+- **Category Management**: Edit, delete, and add new transaction categories dynamically.
 - **History**: Detailed transaction history with date grouping and filters (Today, Week, Month).
 - **Data Privacy**: 100% offline. Your data never leaves your device.
-- **Backup & Restore**: Securely backup your data to a local JSON file and restore when needed.
+- **Backup & Restore**: Securely backup your entire database to a local JSON file and restore when needed.
 - **Export**: Export financial records to CSV or PDF formats.
-- **Customization**: Dark Mode support, Currency formatting (Indian/International), and detailed User Profile.
+- **Customization**: Dark Mode support, Currency formatting (Indian/International), and a detailed User Profile.
 - **Zero Ads**: Clean, interruption-free user experience.
 
 ## 📱 Screenshots
 
-| Dashboard | Expenses | History |
+| Dashboard | Upcoming Actions | Add Transaction |
 |:---:|:---:|:---:|
-| ![Dashboard] | ![Expenses] | ![History] |
+| ![Dashboard] | ![Actions] | ![Add] |
 
-| Plans | Settings | Profile |
+| History | Settings | Profile |
 |:---:|:---:|:---:|
-| ![Plans] | ![Settings] | ![Profile] |
+| ![History] | ![Settings] | ![Profile] |
 
 *(Note: Add screenshots to a `docs/` folder in your repo)*
 
@@ -34,9 +38,9 @@ Mulya is a privacy-focused, offline-first personal finance application for Andro
 - **Architecture**: MVVM (Model-View-ViewModel)
 - **Database**: Room Database (SQLite)
 - **Concurrency**: Coroutines & Flow
-- **UI**: XML Layouts, Material Design Components
+- **UI**: XML Layouts, Material Design Components, BottomSheetDialogFragments
 - **Navigation**: Android Jetpack Navigation
-- **Other Libs**: Gson (JSON parsing), MPAndroidChart (if used, or custom views)
+- **Other Libs**: Gson (JSON parsing), Custom canvas drawing for Charts
 
 ## 📂 Project Structure
 
@@ -46,14 +50,16 @@ ExpenseManagementApp/
 │   ├── src/main/java/com/example/expensemanagementapp/
 │   │   ├── data/             # Room Database, Entities, DAO
 │   │   ├── repository/       # Data Repositories
-│   │   ├── ui/               # Fragments, Activities, Adapters
-│   │   │   ├── dashboard/    # Dashboard UI & Logic
-│   │   │   ├── expenses/     # Add/Edit Transaction UI
-│   │   │   ├── history/      # Components to view history
-│   │   │   ├── plans/        # Future Plans management
+│   │   ├── ui/               # Fragments, Activities, Adapters, BottomSheets
+│   │   │   ├── add/          # Custom Keypad & BottomSheets for entries
+│   │   │   ├── backup/       # JSON Backup & Restore logic
+│   │   │   ├── custom/       # Custom Views (DonutChart)
+│   │   │   ├── dashboard/    # Dashboard UI & Analytics
+│   │   │   ├── history/      # Transaction history & filtering
+│   │   │   ├── plans/        # Recurring and Upcoming Action logic
 │   │   │   ├── profile/      # User Profile
 │   │   │   └── settings/     # App Settings & Preferences
-│   │   ├── utils/            # Helper classes (Export, Backup, Formatting)
+│   │   ├── utils/            # Helper classes (Export, Formatting)
 │   │   └── viewmodel/        # ViewModels for UI state management
 │   └── src/main/res/         # XML Layouts, Drawables, Strings, Themes
 ```

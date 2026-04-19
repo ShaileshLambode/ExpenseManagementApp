@@ -1,5 +1,6 @@
 package com.example.expensemanagementapp.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -83,16 +84,59 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.nav_view)
 
         bottomNavigationView.setupWithNavController(navController)
+        bottomNavigationView.setOnItemSelectedListener { item ->
+            if (item.itemId == R.id.navigation_add) {
+                com.example.expensemanagementapp.ui.add.AddTransactionBottomSheet.newInstance()
+                    .show(supportFragmentManager, com.example.expensemanagementapp.ui.add.AddTransactionBottomSheet.TAG)
+                false
+            } else {
+                androidx.navigation.ui.NavigationUI.onNavDestinationSelected(item, navController)
+                true
+            }
+        }
 
         // Setup ViewModel
-        val dao = AppDatabase.getDatabase(application).expenseDao()
-        val repository = ExpenseRepository(dao)
+        val db = AppDatabase.getDatabase(application)
+        val repository = ExpenseRepository(
+            db.expenseDao(),
+            db.budgetProfileDao(),
+            db.goalDao(),
+            db.recurringTransactionDao()
+        )
         val factory = ViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[MainViewModel::class.java]
 
+        // Profile Selector
+        val layoutProfileSelector: android.widget.LinearLayout = findViewById(R.id.layoutProfileSelector)
+        val tvToolbarProfileName: android.widget.TextView = findViewById(R.id.tvToolbarProfileName)
+        
+        layoutProfileSelector.setOnClickListener {
+            com.example.expensemanagementapp.ui.budget.BudgetProfileBottomSheet.newInstance()
+                .show(supportFragmentManager, com.example.expensemanagementapp.ui.budget.BudgetProfileBottomSheet.TAG)
+        }
+
+        // Observe active profile to update toolbar
+        val profileViewModel = ViewModelProvider(this, factory)[com.example.expensemanagementapp.viewmodel.BudgetProfileViewModel::class.java]
+        profileViewModel.allProfiles.observe(this) { profiles ->
+            val activeProfile = profiles.find { it.is_active }
+            activeProfile?.let {
+                tvToolbarProfileName.text = "${it.name} ${it.icon}"
+                // Update active profile ID in preferences
+                com.example.expensemanagementapp.data.PreferenceManager.getInstance(this).setActiveProfileId(it.id)
+            }
+        }
+
+        // Toolbar History Button
+        val btnToolbarHistory: android.widget.ImageButton = findViewById(R.id.btnToolbarHistory)
+        btnToolbarHistory.setOnClickListener {
+            navController.navigate(R.id.navigation_history)
+        }
+
         // Check initialization
+        var isSetupDialogShown = false
         viewModel.allBalances.observe(this) { balances ->
-            if (balances.isEmpty()) {
+            if (balances.isEmpty() && !isSetupDialogShown && viewModel.activeProfileId.value != null) {
+                isSetupDialogShown = true
                 showInitialSetupDialog()
             }
         }
@@ -123,27 +167,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navController = navHostFragment.navController
         
         when (item.itemId) {
-            R.id.nav_profile -> {
-                navController.navigate(R.id.navigation_profile)
+            R.id.nav_history -> {
+                navController.navigate(R.id.navigation_history)
+            }
+            R.id.nav_backup -> {
+                navController.navigate(R.id.navigation_backup)
             }
             R.id.nav_settings -> {
                 navController.navigate(R.id.navigation_settings)
             }
-            R.id.nav_backup -> {
-                 navController.navigate(R.id.navigation_backup)
-            }
             R.id.nav_help -> {
-                 navController.navigate(R.id.navigation_help)
+                navController.navigate(R.id.navigation_help)
             }
             R.id.nav_about -> {
-                 navController.navigate(R.id.navigation_about)
+                navController.navigate(R.id.navigation_about)
             }
-            R.id.nav_whats_new -> {
-                AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.whats_new_title))
-                    .setMessage(getString(R.string.whats_new_content))
-                    .setPositiveButton("OK", null)
-                    .show()
+            R.id.nav_feedback -> {
+                val url = "https://forms.gle/placeholder"
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                startActivity(intent)
             }
         }
         drawerLayout.closeDrawer(GravityCompat.START)

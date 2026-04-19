@@ -34,21 +34,31 @@ class DashboardFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val dao = AppDatabase.getDatabase(requireContext()).expenseDao()
-        val repository = ExpenseRepository(dao)
+        val db = AppDatabase.getDatabase(requireContext())
+        val repository = ExpenseRepository(
+            db.expenseDao(),
+            db.budgetProfileDao(),
+            db.goalDao(),
+            db.recurringTransactionDao()
+        )
         val factory = ViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[DashboardViewModel::class.java]
 
-        setupViews(view)
+        setupViews(view, factory)
     }
 
-    private fun setupViews(view: View) {
+    private fun setupViews(view: View, factory: ViewModelFactory) {
         // Balances
         val tvTotalBalance: TextView = view.findViewById(R.id.tvTotalBalance)
         val tvBankBalance: TextView = view.findViewById(R.id.tvBankBalance)
         val tvCashBalance: TextView = view.findViewById(R.id.tvCashBalance)
-        val btnAdjustBalance: Button = view.findViewById(R.id.btnAdjustBalance)
 
+        // Active Profile Total Balance
+        viewModel.activeProfileBalance.observe(viewLifecycleOwner) { total ->
+            tvTotalBalance.text = "₹ %.2f".format(total ?: 0.0)
+        }
+
+        // Active Profile Balances
         viewModel.allBalances.observe(viewLifecycleOwner) { balances ->
             var bankTotal = 0.0
             var cashTotal = 0.0
@@ -58,72 +68,108 @@ class DashboardFragment : Fragment() {
             }
             tvBankBalance.text = "₹ %.2f".format(bankTotal)
             tvCashBalance.text = "₹ %.2f".format(cashTotal)
-            tvTotalBalance.text = "₹ %.2f".format(bankTotal + cashTotal)
         }
 
-        btnAdjustBalance.setOnClickListener { showAdjustBalanceDialog() }
+        // Profile Silos
+        val rvSilos: androidx.recyclerview.widget.RecyclerView = view.findViewById(R.id.rvProfileSilos)
+        val siloAdapter = ProfileSiloAdapter()
+        rvSilos.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+        rvSilos.adapter = siloAdapter
 
-        // Today's Expense
-        val tvTodayExpense: TextView = view.findViewById(R.id.tvTodayExpense)
-        viewModel.todayExpense.observe(viewLifecycleOwner) { total ->
-             tvTodayExpense.text = "₹ %.2f".format(total ?: 0.0)
+        androidx.lifecycle.MediatorLiveData<Pair<List<com.example.expensemanagementapp.data.entity.BudgetProfileEntity>, List<com.example.expensemanagementapp.data.entity.ProfileBalanceSum>>>().apply {
+            var profiles: List<com.example.expensemanagementapp.data.entity.BudgetProfileEntity>? = null
+            var balances: List<com.example.expensemanagementapp.data.entity.ProfileBalanceSum>? = null
+            
+            fun update() {
+                val p = profiles
+                val b = balances
+                if (p != null && b != null) {
+                    siloAdapter.setData(p, b)
+                }
+            }
+
+            addSource(viewModel.allProfiles) { profiles = it; update() }
+            addSource(viewModel.allProfileBalances) { balances = it; update() }
+        }.observe(viewLifecycleOwner) {}
+
+        // Recent Activity
+        val rvRecent: androidx.recyclerview.widget.RecyclerView = view.findViewById(R.id.rvRecentTransactions)
+        val tvSeeAll: TextView = view.findViewById(R.id.tvSeeAll)
+        
+        tvSeeAll.setOnClickListener {
+            findNavController().navigate(R.id.navigation_history)
+        }
+
+        val recentAdapter = RecentTransactionAdapter()
+        rvRecent.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        rvRecent.adapter = recentAdapter
+
+        viewModel.allProfiles.observe(viewLifecycleOwner) { profiles ->
+            recentAdapter.setProfiles(profiles)
+            viewModel.recentTransactions.observe(viewLifecycleOwner) { transactions ->
+                recentAdapter.submitList(transactions)
+            }
+        }
+
+        // Upcoming Actions
+        val rvUpcomingActions: androidx.recyclerview.widget.RecyclerView = view.findViewById(R.id.rvUpcomingActions)
+        val tvManageActions: TextView = view.findViewById(R.id.tvManageActions)
+        val btnAddAction: Button = view.findViewById(R.id.btnAddAction)
+
+        val plansViewModel = ViewModelProvider(requireActivity(), factory)[com.example.expensemanagementapp.viewmodel.PlansViewModel::class.java]
+        val upcomingAdapter = com.example.expensemanagementapp.ui.plans.PlansAdapter(
+            onPlanCompleted = { plan ->
+                plansViewModel.markPlanCompleted(plan)
+            },
+            onPlanClicked = { plan ->
+                com.example.expensemanagementapp.ui.plans.EditPlanBottomSheet.newInstance(plan.id)
+                    .show(childFragmentManager, "EditPlanBottomSheet")
+            },
+            onDeleteClicked = { plan ->
+                plansViewModel.deletePlan(plan)
+            }
+        )
+        rvUpcomingActions.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        rvUpcomingActions.adapter = upcomingAdapter
+
+        viewModel.pendingPlans.observe(viewLifecycleOwner) { plans ->
+            upcomingAdapter.submitList(plans.take(3)) // Show top 3 on dashboard
+        }
+
+        btnAddAction.setOnClickListener {
+            com.example.expensemanagementapp.ui.add.AddActionBottomSheet.newInstance()
+                .show(childFragmentManager, com.example.expensemanagementapp.ui.add.AddActionBottomSheet.TAG)
+        }
+
+        tvManageActions.setOnClickListener {
+            com.example.expensemanagementapp.ui.plans.ManageActionsBottomSheet.newInstance()
+                .show(childFragmentManager, com.example.expensemanagementapp.ui.plans.ManageActionsBottomSheet.TAG)
         }
 
         // Period Summary
-        val tvPeriodExpense: TextView = view.findViewById(R.id.tvPeriodExpense)
-        val tvPeriodIncome: TextView = view.findViewById(R.id.tvPeriodIncome)
-
-        // Set initial selection logic if needed, but XML has checkedButton set.
         val toggleGroup = view.findViewById<MaterialButtonToggleGroup>(R.id.toggleGroupPeriod)
         
         toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 when (checkedId) {
-                    R.id.btnRangeToday -> viewModel.setRange("TODAY")
                     R.id.btnRangeWeek -> viewModel.setRange("WEEK")
                     R.id.btnRangeMonth -> viewModel.setRange("MONTH")
                 }
             }
         }
-
-        // Insights and Trend
-        val sparkline = view.findViewById<com.example.expensemanagementapp.ui.custom.SparklineView>(R.id.sparklineTrend)
-        val cbExpense = view.findViewById<CheckBox>(R.id.cbExpense)
-        val cbIncome = view.findViewById<CheckBox>(R.id.cbIncome)
-
-        cbExpense.setOnCheckedChangeListener { _, isChecked ->
-            sparkline.setVisibility(isChecked, cbIncome.isChecked)
-        }
-        cbIncome.setOnCheckedChangeListener { _, isChecked ->
-            sparkline.setVisibility(cbExpense.isChecked, isChecked)
-        }
-        viewModel.trendData.observe(viewLifecycleOwner) { (expense, income) ->
-            sparkline.setData(expense, income)
-            sparkline.setVisibility(cbExpense.isChecked, cbIncome.isChecked)
-        }
         
         // Donut Chart & Category Breakdown
         val donutChart = view.findViewById<com.example.expensemanagementapp.ui.custom.DonutChartView>(R.id.donutChart)
         val rvLegend: androidx.recyclerview.widget.RecyclerView = view.findViewById(R.id.rvCategoryLegend)
-        val tvNoData: TextView = view.findViewById(R.id.tvNoData)
 
         donutChart.setOnCategoryClickListener { category ->
              category.category?.let { catName ->
                  val bundle = android.os.Bundle().apply {
                      putString("category_filter", catName)
-                     putString("period_filter", viewModel.selectedRange.value) // Pass current range
+                     putString("period_filter", viewModel.selectedRange.value)
                  }
-                 try {
-                     findNavController().navigate(R.id.navigation_history, bundle)
-                 } catch (e: Exception) {
-                     e.printStackTrace()
-                 }
+                 findNavController().navigate(R.id.navigation_history, bundle)
              }
-        }
-        
-        viewModel.periodSummary.observe(viewLifecycleOwner) { (expense, income) ->
-            tvPeriodExpense.text = "₹ %.2f".format(expense)
-            tvPeriodIncome.text = "₹ %.2f".format(income)
         }
 
         legendAdapter = CategoryLegendAdapter()
@@ -131,15 +177,7 @@ class DashboardFragment : Fragment() {
         rvLegend.adapter = legendAdapter
 
         viewModel.categoryBreakdown.observe(viewLifecycleOwner) { data ->
-            if (data.isNullOrEmpty()) {
-                tvNoData.visibility = View.VISIBLE
-                donutChart.visibility = View.GONE
-                rvLegend.visibility = View.GONE
-            } else {
-                tvNoData.visibility = View.GONE
-                donutChart.visibility = View.VISIBLE
-                rvLegend.visibility = View.VISIBLE
-                
+            if (data != null) {
                 donutChart.setData(data)
                 legendAdapter.setData(data)
             }

@@ -27,7 +27,47 @@
                 android:layout_height="?attr/actionBarSize"
                 android:background="?attr/colorPrimary"
                 app:titleTextColor="@android:color/white"
-                style="@style/Widget.MaterialComponents.Toolbar.Primary" />
+                style="@style/Widget.MaterialComponents.Toolbar.Primary">
+
+                <LinearLayout
+                    android:id="@+id/layoutProfileSelector"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+
+                    <TextView
+                        android:id="@+id/tvToolbarProfileName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Daily Expenses 💰"
+                        android:textColor="@android:color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="4dp"
+                        android:src="@android:drawable/arrow_down_float"
+                        app:tint="@android:color/white" />
+
+                </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/btnToolbarHistory"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="end"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_history"
+                    app:tint="@android:color/white"
+                    android:contentDescription="History" />
+
+            </com.google.android.material.appbar.MaterialToolbar>
 
         </com.google.android.material.appbar.AppBarLayout>
 

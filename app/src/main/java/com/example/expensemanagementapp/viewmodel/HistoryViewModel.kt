@@ -22,28 +22,35 @@ data class HistoryFilter(
 
 class HistoryViewModel(private val repository: ExpenseRepository) : ViewModel() {
 
+    val allProfiles: LiveData<List<com.example.expensemanagementapp.data.entity.BudgetProfileEntity>> = repository.allProfiles
+    
+    private val activeProfile = allProfiles.map { profiles ->
+        profiles.find { it.is_active }
+    }
+
+    val activeProfileId: LiveData<Int?> = activeProfile.map { it?.id }
+
     private val _filterState = MutableLiveData<HistoryFilter>(HistoryFilter())
     val filterState: LiveData<HistoryFilter> = _filterState
 
-    val filteredTransactions: LiveData<List<TransactionEntity>> = _filterState.switchMap { filter ->
-        val source = if (filter.startDate == null) {
-            if (filter.types.containsAll(listOf("EXPENSE", "INCOME")) && filter.types.size == 2) {
-                 repository.allTransactions
-            } else {
-                 repository.getTransactionsByTypes(filter.types)
-            }
-        } else {
-            val start = getStartOfDay(filter.startDate)
-            val end = if (filter.endDate != null) getEndOfDay(filter.endDate) else getEndOfDay(filter.startDate)
+    val filteredTransactions: LiveData<List<TransactionEntity>> = activeProfileId.switchMap { profileId ->
+        _filterState.switchMap { filter ->
+            if (profileId == null) return@switchMap MutableLiveData(emptyList())
             
-            repository.getTransactionsByDateAndTypes(start, end, filter.types)
-        }
-        
-        source.map { list ->
-            if (!filter.category.isNullOrEmpty()) {
-                list.filter { it.category == filter.category }
+            val source = if (filter.startDate == null) {
+                repository.getAllTransactions(profileId)
             } else {
-                list
+                val start = getStartOfDay(filter.startDate)
+                val end = if (filter.endDate != null) getEndOfDay(filter.endDate) else getEndOfDay(filter.startDate)
+                repository.getTransactionsByDateAndTypes(profileId, start, end, filter.types)
+            }
+            
+            source.map { list ->
+                if (!filter.category.isNullOrEmpty()) {
+                    list.filter { it.category == filter.category }
+                } else {
+                    list
+                }
             }
         }
     }
@@ -125,10 +132,10 @@ class HistoryViewModel(private val repository: ExpenseRepository) : ViewModel() 
 
     fun editTransaction(oldTx: TransactionEntity, newTitle: String, newAmount: Double, newMode: String, newDate: Long) {
         viewModelScope.launch {
-            // 1. Revert Old Impact
-            val oldBalance = repository.getBalance(oldTx.mode) ?: return@launch
+            val profileId = oldTx.budget_profile_id
             
-            // We must refetch balance because it might be the same entity
+            // 1. Revert Old Impact
+            val oldBalance = repository.getBalance(oldTx.mode, profileId) ?: return@launch
             var currentOldBalanceAmount = oldBalance.amount
             
             if (oldTx.transaction_type == "EXPENSE") {
@@ -136,15 +143,10 @@ class HistoryViewModel(private val repository: ExpenseRepository) : ViewModel() 
             } else {
                 currentOldBalanceAmount -= oldTx.amount
             }
-            
-            // Update the old balance first
             repository.updateBalance(oldBalance.copy(amount = currentOldBalanceAmount))
             
             // 2. Apply New Impact
-            // Fetch fresh balance for new mode (even if same as old mode, we just updated it so we need fresh fetch or use calculated)
-            // To be safe, fetch fresh.
-            val newBalanceEntity = repository.getBalance(newMode) ?: return@launch
-            
+            val newBalanceEntity = repository.getBalance(newMode, profileId) ?: return@launch
             var finalAmount = newBalanceEntity.amount
             if (oldTx.transaction_type == "EXPENSE") {
                 finalAmount -= newAmount
@@ -166,12 +168,10 @@ class HistoryViewModel(private val repository: ExpenseRepository) : ViewModel() 
     }
 
     suspend fun getTransactionsForExport(startDate: Long, endDate: Long, types: List<String>): List<TransactionEntity> {
+        val profileId = activeProfileId.value ?: return emptyList()
         val start = getStartOfDay(startDate)
         val end = getEndOfDay(endDate)
         
-        if (types.containsAll(listOf("EXPENSE", "INCOME")) && types.size == 2) {
-             return repository.getTransactionsByDateSync(start, end)
-        }
-        return repository.getTransactionsByDateAndTypesSync(start, end, types)
+        return repository.getTransactionsByDateAndTypesSync(profileId, start, end, types)
     }
 }

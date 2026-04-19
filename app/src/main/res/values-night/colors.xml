@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="chip_background">#383838</color> <!-- charcoal_elevated -->
-    <color name="chip_text">#F5F5F5</color>
+    <!-- Dark Mode Overrides -->
+    <color name="color_background_main">@color/dark_background</color>
+    <color name="color_border">#334155</color>
+    <color name="text_primary">@color/dark_text_primary</color>
+    <color name="text_secondary">@color/dark_text_secondary</color>
     
     <!-- Semantic Colors -->
-    <color name="color_date_header_background">#383838</color>
-    <color name="color_card_background_charcoal">#2C2C2C</color>
+    <color name="color_date_header_background">#1E293B</color>
+    <color name="color_card_background_charcoal">@color/dark_surface</color>
+    
+    <!-- Material Components Night Defaults -->
+    <color name="chip_background">#1E293B</color>
+    <color name="chip_text">@color/dark_text_primary</color>
+
+    <!-- Slate Palette -->
+    <color name="color_slate_background">#0F172A</color>
+    <color name="color_slate_light">#94A3B8</color>
 </resources>

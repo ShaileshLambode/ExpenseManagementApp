@@ -16,6 +16,8 @@ class PreferenceManager(context: Context) {
         private const val KEY_LOW_BALANCE_NOTIF = "NOTIF_LOW_BALANCE"
         private const val KEY_LOW_BALANCE_THRESHOLD = "LOW_BALANCE_THRESHOLD"
         private const val KEY_AUTO_BACKUP = "AUTO_BACKUP"
+        private const val KEY_ACTIVE_PROFILE_ID = "ACTIVE_PROFILE_ID"
+        private const val KEY_IS_FIRST_LAUNCH = "IS_FIRST_LAUNCH"
         
         @Volatile
         private var INSTANCE: PreferenceManager? = null
@@ -98,5 +100,19 @@ class PreferenceManager(context: Context) {
 
     fun setAutoBackupEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_AUTO_BACKUP, enabled).apply()
+    }
+
+    // Multi-profile
+    fun getActiveProfileId(): Int = prefs.getInt(KEY_ACTIVE_PROFILE_ID, 1)
+
+    fun setActiveProfileId(id: Int) {
+        prefs.edit().putInt(KEY_ACTIVE_PROFILE_ID, id).apply()
+    }
+
+    // Onboarding
+    fun isFirstLaunch(): Boolean = prefs.getBoolean(KEY_IS_FIRST_LAUNCH, true)
+
+    fun setFirstLaunch(isFirst: Boolean) {
+        prefs.edit().putBoolean(KEY_IS_FIRST_LAUNCH, isFirst).apply()
     }
 }

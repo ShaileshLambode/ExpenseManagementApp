@@ -36,7 +36,7 @@ class DonutChartView @JvmOverloads constructor(
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.cat_bills),
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.cat_shopping),
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.cat_others),
-        androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.muted_violet),
+        androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.deep_blue_primary),
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.soft_gold)
     )
 
@@ -46,7 +46,7 @@ class DonutChartView @JvmOverloads constructor(
         bgPaint.color = ContextCompat.getColor(context, android.R.color.darker_gray)
         bgPaint.alpha = 30 // Highly transparent
         
-        textPaint.color = ContextCompat.getColor(context, android.R.color.black) // Default, updated on draw
+        textPaint.color = ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.text_primary) // Default, updated on draw
         textPaint.textAlign = Paint.Align.CENTER
         textPaint.textSize = 32f
         textPaint.isFakeBoldText = true

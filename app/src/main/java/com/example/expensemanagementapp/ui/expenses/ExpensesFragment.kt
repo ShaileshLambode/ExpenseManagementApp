@@ -34,8 +34,13 @@ class ExpensesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val dao = AppDatabase.getDatabase(requireContext()).expenseDao()
-        val repository = ExpenseRepository(dao)
+        val db = AppDatabase.getDatabase(requireContext())
+        val repository = ExpenseRepository(
+            db.expenseDao(),
+            db.budgetProfileDao(),
+            db.goalDao(),
+            db.recurringTransactionDao()
+        )
         val factory = ViewModelFactory(repository)
         viewModel = ViewModelProvider(this, factory)[ExpensesViewModel::class.java]
 

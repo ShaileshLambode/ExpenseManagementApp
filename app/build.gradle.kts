@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.expensemanagementapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.52"
+        versionCode = 2
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -74,4 +74,13 @@ dependencies {
 
     // Gson
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // WorkManager (Recurring Transactions)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // ViewPager2 (Onboarding slides)
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
+
+    // DotsIndicator (Onboarding page dots)
+    implementation("com.tbuonomo:dotsindicator:5.0")
 }

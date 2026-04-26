@@ -114,6 +114,7 @@
             android:entries="@array/transaction_modes" />
 
         <LinearLayout
+            android:id="@+id/layoutCategory"
             android:layout_width="0dp"
             android:layout_height="56dp"
             android:layout_weight="1"

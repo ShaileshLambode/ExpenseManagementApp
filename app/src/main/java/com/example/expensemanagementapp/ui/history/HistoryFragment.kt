@@ -97,7 +97,36 @@ class HistoryFragment : Fragment() {
             viewModel.clearFilter()
         }
 
+        val btnExport = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnExport)
         val chipGroupPeriod = view.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupPeriod)
+
+        viewModel.allProfiles.observe(viewLifecycleOwner) { profiles ->
+            val activeProfile = profiles.find { it.is_active }
+            activeProfile?.let { profile ->
+                try {
+                    val colorInt = android.graphics.Color.parseColor(profile.color)
+                    val csl = android.content.res.ColorStateList.valueOf(colorInt)
+                    btnExport.backgroundTintList = csl
+                    
+                    // Update all chips in the group
+                    for (i in 0 until chipGroupPeriod.childCount) {
+                        val chip = chipGroupPeriod.getChildAt(i) as? com.google.android.material.chip.Chip
+                        chip?.let {
+                            val chipCsl = android.content.res.ColorStateList(
+                                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                                intArrayOf(colorInt, android.graphics.Color.TRANSPARENT)
+                            )
+                            it.chipBackgroundColor = chipCsl
+                            // If checked, text should be white, else primary
+                            it.setTextColor(android.content.res.ColorStateList(
+                                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                                intArrayOf(android.graphics.Color.WHITE, android.graphics.Color.GRAY)
+                            ))
+                        }
+                    }
+                } catch (e: Exception) {}
+            }
+        }
         
         chipGroupPeriod.setOnCheckedStateChangeListener { group, checkedIds ->
             if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener

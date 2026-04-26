@@ -41,6 +41,10 @@ class ExpenseRepository(
         budgetProfileDao.activateProfile(profileId)
     }
 
+    suspend fun softDeleteBudgetProfile(id: Int, deletedAt: Long) = budgetProfileDao.softDeleteProfile(id, deletedAt)
+    suspend fun restoreBudgetProfile(id: Int) = budgetProfileDao.restoreProfile(id)
+    suspend fun purgeOldDeletedProfiles(cutoff: Long) = budgetProfileDao.purgeOldDeletedProfiles(cutoff)
+
     // --- Goal Operations ---
     fun getGoalsByProfile(profileId: Int): LiveData<List<GoalEntity>> = goalDao.getGoalsByProfile(profileId)
     
@@ -49,6 +53,10 @@ class ExpenseRepository(
     suspend fun updateGoal(goal: GoalEntity) = goalDao.updateGoal(goal)
     
     suspend fun deleteGoal(goal: GoalEntity) = goalDao.deleteGoal(goal)
+    
+    suspend fun softDeleteGoal(id: Int, deletedAt: Long) = goalDao.softDeleteGoal(id, deletedAt)
+    suspend fun restoreGoal(id: Int) = goalDao.restoreGoal(id)
+    suspend fun purgeOldDeletedGoals(cutoff: Long) = goalDao.purgeOldDeletedGoals(cutoff)
 
     // --- Recurring Transaction Operations ---
     fun getRecurringByProfile(profileId: Int): LiveData<List<RecurringTransactionEntity>> = recurringTransactionDao.getRecurringByProfile(profileId)
@@ -82,6 +90,10 @@ class ExpenseRepository(
     suspend fun deleteTransaction(transaction: TransactionEntity) {
         expenseDao.deleteTransaction(transaction)
     }
+    
+    suspend fun softDeleteTransaction(id: Int, deletedAt: Long) = expenseDao.softDeleteTransaction(id, deletedAt)
+    suspend fun restoreTransaction(id: Int) = expenseDao.restoreTransaction(id)
+    suspend fun purgeOldDeletedTransactions(cutoff: Long) = expenseDao.purgeOldDeletedTransactions(cutoff)
 
     suspend fun updateTransaction(transaction: TransactionEntity) {
         expenseDao.updateTransaction(transaction)
@@ -113,6 +125,18 @@ class ExpenseRepository(
         return expenseDao.getCategoryBreakdown(profileId, start, end)
     }
 
+    fun getIncomeCategoryBreakdown(profileId: Int, start: Long, end: Long): LiveData<List<CategorySum>> {
+        return expenseDao.getIncomeCategoryBreakdown(profileId, start, end)
+    }
+
+    fun getIncomeVsExpenseTotals(profileId: Int, start: Long, end: Long): LiveData<List<CategorySum>> {
+        return expenseDao.getIncomeVsExpenseTotals(profileId, start, end)
+    }
+
+    fun getSumByTypeSync(profileId: Int, type: String, start: Long, end: Long): LiveData<Double?> {
+        return expenseDao.getSumByTypeSync(profileId, type, start, end)
+    }
+
     fun getTrendTransactions(profileId: Int, start: Long, end: Long): LiveData<List<TransactionEntity>> {
         return expenseDao.getTrendTransactions(profileId, start, end)
     }
@@ -130,6 +154,10 @@ class ExpenseRepository(
         expenseDao.deletePlan(plan)
     }
 
+    suspend fun softDeletePlan(id: Int, deletedAt: Long) = expenseDao.softDeletePlan(id, deletedAt)
+    suspend fun restorePlan(id: Int) = expenseDao.restorePlan(id)
+    suspend fun purgeOldDeletedPlans(cutoff: Long) = expenseDao.purgeOldDeletedPlans(cutoff)
+
     // --- Category Operations ---
     suspend fun insertCategory(category: CategoryEntity) {
         expenseDao.insertCategory(category)
@@ -138,6 +166,10 @@ class ExpenseRepository(
     suspend fun deleteCategory(category: CategoryEntity) {
         expenseDao.deleteCategory(category)
     }
+    
+    suspend fun softDeleteCategory(id: Int, deletedAt: Long) = expenseDao.softDeleteCategory(id, deletedAt)
+    suspend fun restoreCategory(id: Int) = expenseDao.restoreCategory(id)
+    suspend fun purgeOldDeletedCategories(cutoff: Long) = expenseDao.purgeOldDeletedCategories(cutoff)
 
     suspend fun updateCategory(category: CategoryEntity) {
         expenseDao.updateCategory(category)
@@ -169,9 +201,19 @@ class ExpenseRepository(
         expenseDao.deleteTransactionWithBalanceUpdate(transaction)
     }
 
+    suspend fun restoreTransactionWithBalance(transaction: TransactionEntity) {
+        expenseDao.restoreTransactionWithBalanceUpdate(transaction)
+    }
+
     val totalCombinedBalance: LiveData<Double?> = expenseDao.getTotalCombinedBalance()
     
     val recentTransactionsAllProfiles: LiveData<List<TransactionEntity>> = expenseDao.getRecentTransactionsAllProfiles()
     
     val allProfileBalances: LiveData<List<com.example.expensemanagementapp.data.entity.ProfileBalanceSum>> = expenseDao.getAllProfileBalances()
+
+    val deletedTransactions: LiveData<List<TransactionEntity>> = expenseDao.getDeletedTransactions()
+    val deletedPlans: LiveData<List<PendingPlanEntity>> = expenseDao.getDeletedPlans()
+    val deletedCategories: LiveData<List<CategoryEntity>> = expenseDao.getDeletedCategories()
+    val deletedProfiles: LiveData<List<BudgetProfileEntity>> = budgetProfileDao.getDeletedProfiles()
+    val deletedGoals: LiveData<List<GoalEntity>> = goalDao.getDeletedGoals()
 }

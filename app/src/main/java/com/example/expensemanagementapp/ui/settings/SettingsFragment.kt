@@ -90,21 +90,14 @@ class SettingsFragment : Fragment() {
 
     private fun setupFinancialPreferences(view: View) {
         val rgDefaultAccount = view.findViewById<RadioGroup>(R.id.rgDefaultAccount)
-        val switchNegativeBalance = view.findViewById<SwitchMaterial>(R.id.switchNegativeBalance)
         val prefs = getPrefs()
-
+        
         // Default Account
         val isCashDefault = prefs.isDefaultaccountCash()
         if (isCashDefault) rgDefaultAccount.check(R.id.rbAccountCash) else rgDefaultAccount.check(R.id.rbAccountBank)
 
         rgDefaultAccount.setOnCheckedChangeListener { _, checkedId ->
             prefs.setDefaultAccountCash(checkedId == R.id.rbAccountCash)
-        }
-
-        // Negative Balance
-        switchNegativeBalance.isChecked = prefs.isNegativeBalanceAllowed()
-        switchNegativeBalance.setOnCheckedChangeListener { _, isChecked ->
-            prefs.setNegativeBalanceAllowed(isChecked)
         }
     }
     
@@ -148,8 +141,10 @@ class SettingsFragment : Fragment() {
             prefs.setAutoBackupEnabled(isChecked)
         }
 
-        view.findViewById<View>(R.id.btnBackup).setOnClickListener {
-             androidx.navigation.Navigation.findNavController(view).navigate(R.id.navigation_backup)
+         // Auto Backup
+        switchAutoBackup.isChecked = prefs.isAutoBackupEnabled()
+        switchAutoBackup.setOnCheckedChangeListener { _, isChecked ->
+            prefs.setAutoBackupEnabled(isChecked)
         }
 
         view.findViewById<View>(R.id.btnExport).setOnClickListener {

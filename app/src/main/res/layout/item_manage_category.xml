@@ -9,6 +9,13 @@
     android:paddingVertical="12dp">
 
     <TextView
+        android:id="@+id/tvCategoryEmoji"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:textSize="20sp" />
+
+    <TextView
         android:id="@+id/tvCategoryName"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

@@ -36,7 +36,6 @@ class MainViewModel(private val repository: ExpenseRepository) : ViewModel() {
             if (profiles.isEmpty()) {
                 repository.insertBudgetProfile(com.example.expensemanagementapp.data.entity.BudgetProfileEntity(
                     name = "Primary Budget",
-                    color = "#2D52E5",
                     icon = "💰",
                     is_active = true
                 ))
@@ -75,7 +74,6 @@ class MainViewModel(private val repository: ExpenseRepository) : ViewModel() {
                 if (profiles.isEmpty()) {
                     repository.insertBudgetProfile(com.example.expensemanagementapp.data.entity.BudgetProfileEntity(
                         name = "Primary Budget",
-                        color = "#2D52E5",
                         icon = "💰",
                         is_active = true
                     ))

@@ -28,7 +28,7 @@ import com.example.expensemanagementapp.data.entity.ProfileEntity
         GoalEntity::class,
         RecurringTransactionEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -95,6 +95,21 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_8_9 = object : androidx.room.migration.Migration(8, 9) {
+            override fun migrate(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE transactions ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE transactions ADD COLUMN deleted_at INTEGER")
+                database.execSQL("ALTER TABLE pending_plans ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE pending_plans ADD COLUMN deleted_at INTEGER")
+                database.execSQL("ALTER TABLE categories ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE categories ADD COLUMN deleted_at INTEGER")
+                database.execSQL("ALTER TABLE goals ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE goals ADD COLUMN deleted_at INTEGER")
+                database.execSQL("ALTER TABLE budget_profiles ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE budget_profiles ADD COLUMN deleted_at INTEGER")
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -102,11 +117,11 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                      "expense_manager_db"
                 )
-                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                 .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                  .addCallback(object : Callback() {
                      override fun onCreate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                          super.onCreate(db)
-                         db.execSQL("INSERT INTO budget_profiles (id, name, color, icon, is_active, created_at) VALUES (1, 'Primary Budget', '#3F51B5', '💰', 1, ${System.currentTimeMillis()})")
+                         db.execSQL("INSERT INTO budget_profiles (id, name, color, icon, is_active, created_at, is_deleted) VALUES (1, 'Primary Budget', '#3F51B5', '💰', 1, ${System.currentTimeMillis()}, 0)")
                      }
                  })
                  .build()

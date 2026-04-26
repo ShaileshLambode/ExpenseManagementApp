@@ -50,7 +50,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="The Dashboard gives you a quick snapshot of your finances:\n• Total Balance: Combined Bank and Cash funds.\n• Today's Expenses: What you've spent today.\n• Summary: Visual Donut chart showing income vs expense.\n• Spending Trend: A smooth Sparkline graph of your transaction history.\n\nAll values and charts update automatically as you add transactions."
+            android:text="The Dashboard gives you a quick snapshot of your finances:\n• Total Balance: Combined Bank and Cash funds.\n• Today's Expenses: What you've spent today.\n• Summary: Visual Donut chart showing income vs expense.\n• Spending Trend: A smooth Sparkline graph of your transaction history.\n\n✨ New: Interactive Charts! You can touch and swipe across any chart to see exact amounts and dates at any point in time."
             android:textSize="14sp"
             android:lineSpacingExtra="4dp"
             android:textColor="?android:attr/textColorSecondary"
@@ -146,11 +146,29 @@
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Section 8: Theme & Settings -->
+        <!-- Section 8: Recycle Bin -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="8. Theme &amp; Settings"
+            android:text="8. Recycle Bin"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="?android:attr/textColorPrimary"
+            android:layout_marginBottom="8dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deleted transactions, plans, goals, and profiles are moved to the Recycle Bin. You can restore them to recover your data (and balance!), or permanently delete them. \n\n✨ Important: Items in the Recycle Bin are automatically purged after 30 days. Restoring a transaction will also automatically re-adjust your current balance."
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Section 9: Theme & Settings -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="9. Theme &amp; Settings"
             android:textStyle="bold"
             android:textSize="18sp"
             android:textColor="?android:attr/textColorPrimary"
@@ -164,11 +182,11 @@
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Section 9: Profile -->
+        <!-- Section 10: Profile & Budgets -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="9. Profile"
+            android:text="10. Profile &amp; Budgets"
             android:textStyle="bold"
             android:textSize="18sp"
             android:textColor="?android:attr/textColorPrimary"
@@ -176,17 +194,17 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Personalize your app experience in the Profile section:\n• Add your Name, City, State, and Mobile.\n• Select your Gender and Date of Birth.\n• Set a Profile Picture.\n\nYour profile details are displayed in the navigation header."
+            android:text="Personalize your app experience in the Profile section:\n• Add your Name, City, State, and Mobile.\n• Select your Gender and Date of Birth.\n• Set a Profile Picture.\n\n✨ Multiple Budgets: Create and manage multiple budgets (e.g., Home, Office, Personal). Switch between them from the top toolbar profile selector. Each budget maintains its own independent data and balances."
             android:textSize="14sp"
             android:lineSpacingExtra="4dp"
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Section 10: Privacy -->
+        <!-- Section 11: Privacy -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="10. Privacy"
+            android:text="11. Privacy"
             android:textStyle="bold"
             android:textSize="18sp"
             android:textColor="?android:attr/textColorPrimary"

@@ -44,7 +44,7 @@ class EditPlanBottomSheet : BottomSheetDialogFragment() {
         val etAmount = view.findViewById<TextInputEditText>(R.id.etEditPlanAmount)
         val actvCategory = view.findViewById<android.widget.AutoCompleteTextView>(R.id.etEditPlanCategory)
         val etDate = view.findViewById<TextInputEditText>(R.id.etEditPlanDate)
-        val switchUndefinedDate = view.findViewById<MaterialSwitch>(R.id.switchEditUndefinedDate)
+        val cbNoFixedDate = view.findViewById<android.widget.CheckBox>(R.id.cbNoFixedDate)
         val rbPay = view.findViewById<RadioButton>(R.id.rbEditPay)
         val rbReceive = view.findViewById<RadioButton>(R.id.rbEditReceive)
         val rbBank = view.findViewById<RadioButton>(R.id.rbEditPlanBank)
@@ -69,10 +69,10 @@ class EditPlanBottomSheet : BottomSheetDialogFragment() {
                 val calendar = Calendar.getInstance()
                 calendar.timeInMillis = editSelectedDate!!
                 etDate.setText("${calendar.get(Calendar.DAY_OF_MONTH)}/${calendar.get(Calendar.MONTH) + 1}/${calendar.get(Calendar.YEAR)}")
-                switchUndefinedDate.isChecked = false
+                cbNoFixedDate.isChecked = false
                 etDate.isEnabled = true
             } else {
-                switchUndefinedDate.isChecked = true
+                cbNoFixedDate.isChecked = true
                 etDate.isEnabled = false
                 etDate.text?.clear()
             }
@@ -80,7 +80,7 @@ class EditPlanBottomSheet : BottomSheetDialogFragment() {
             if (plan.plan_type == "PAY") rbPay.isChecked = true else rbReceive.isChecked = true
             if (plan.mode == "BANK") rbBank.isChecked = true else rbCash.isChecked = true
 
-            switchUndefinedDate.setOnCheckedChangeListener { _, isChecked ->
+            cbNoFixedDate.setOnCheckedChangeListener { _, isChecked ->
                 etDate.isEnabled = !isChecked
                 if (isChecked) {
                     etDate.text?.clear()
@@ -123,7 +123,7 @@ class EditPlanBottomSheet : BottomSheetDialogFragment() {
                     return@setOnClickListener
                 }
                 
-                if (!switchUndefinedDate.isChecked && editSelectedDate == null) {
+                if (!cbNoFixedDate.isChecked && editSelectedDate == null) {
                      Toast.makeText(context, getString(R.string.error_select_date), Toast.LENGTH_SHORT).show()
                      return@setOnClickListener
                 }

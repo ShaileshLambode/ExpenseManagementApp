@@ -10,7 +10,6 @@ class PreferenceManager(context: Context) {
         private const val PREFS_NAME = "Settings"
         private const val KEY_CURRENCY_SYMBOL = "CURRENCY_SYMBOL" // Matched SettingsFragment keys
         private const val KEY_DARK_MODE = "THEME_MODE" // Matched SettingsFragment keys (Int or Boolean? SettingsFragment uses Int...)
-        private const val KEY_ALLOW_NEGATIVE_BALANCE = "ALLOW_NEGATIVE_BALANCE"
         private const val KEY_IS_INDIAN_FORMAT = "FORMAT_INDIAN"
         private const val KEY_DEFAULT_CASH = "DEFAULT_CASH"
         private const val KEY_LOW_BALANCE_NOTIF = "NOTIF_LOW_BALANCE"
@@ -62,15 +61,6 @@ class PreferenceManager(context: Context) {
         prefs.edit().putInt(KEY_DARK_MODE, mode).apply()
     }
     
-    // Balance
-    fun isNegativeBalanceAllowed(): Boolean {
-        return prefs.getBoolean(KEY_ALLOW_NEGATIVE_BALANCE, true)
-    }
-    
-    fun setNegativeBalanceAllowed(allowed: Boolean) {
-        prefs.edit().putBoolean(KEY_ALLOW_NEGATIVE_BALANCE, allowed).apply()
-    }
-    
     // Helpers for other settings
     fun getLowBalanceThreshold(): Float = prefs.getFloat(KEY_LOW_BALANCE_THRESHOLD, 1000f)
     
@@ -91,6 +81,12 @@ class PreferenceManager(context: Context) {
     }
 
     fun isDefaultaccountCash(): Boolean = prefs.getBoolean(KEY_DEFAULT_CASH, false)
+
+    fun isNegativeBalanceAllowed(): Boolean = prefs.getBoolean("ALLOW_NEGATIVE_BALANCE", true)
+    
+    fun setNegativeBalanceAllowed(allowed: Boolean) {
+        prefs.edit().putBoolean("ALLOW_NEGATIVE_BALANCE", allowed).apply()
+    }
 
     fun setDefaultAccountCash(isCash: Boolean) {
         prefs.edit().putBoolean(KEY_DEFAULT_CASH, isCash).apply()

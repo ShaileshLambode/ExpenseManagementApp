@@ -29,8 +29,8 @@ class DonutChartView @JvmOverloads constructor(
     private var progress = 0f
     private var animator: ValueAnimator? = null
 
-    // Nice Colors
-    private val colors = listOf(
+    // Nice Colors (default palette for category breakdown)
+    private val defaultColors = listOf(
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.cat_food),
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.cat_travel),
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.cat_bills),
@@ -39,6 +39,7 @@ class DonutChartView @JvmOverloads constructor(
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.deep_blue_primary),
         androidx.core.content.ContextCompat.getColor(context, com.example.expensemanagementapp.R.color.soft_gold)
     )
+    private var colors = defaultColors
 
     init {
         bgPaint.style = Paint.Style.STROKE
@@ -57,6 +58,16 @@ class DonutChartView @JvmOverloads constructor(
     }
 
     private var listener: OnCategoryClickListener? = null
+
+    fun setColors(overrideColors: List<Int>) {
+        colors = if (overrideColors.isEmpty()) defaultColors else overrideColors
+        invalidate()
+    }
+
+    fun resetColors() {
+        colors = defaultColors
+        invalidate()
+    }
 
     fun setData(newData: List<CategorySum>) {
         this.data = newData
@@ -77,7 +88,7 @@ class DonutChartView @JvmOverloads constructor(
         }
     }
 
-    fun setOnCategoryClickListener(listener: OnCategoryClickListener) {
+    fun setOnCategoryClickListener(listener: OnCategoryClickListener?) {
         this.listener = listener
     }
 

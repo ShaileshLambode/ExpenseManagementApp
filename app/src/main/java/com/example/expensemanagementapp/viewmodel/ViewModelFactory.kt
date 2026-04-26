@@ -38,6 +38,10 @@ class ViewModelFactory(private val repository: ExpenseRepository) : ViewModelPro
             @Suppress("UNCHECKED_CAST")
             return com.example.expensemanagementapp.viewmodel.GoalsViewModel(repository) as T
         }
+        if (modelClass.isAssignableFrom(com.example.expensemanagementapp.viewmodel.RecycleBinViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return com.example.expensemanagementapp.viewmodel.RecycleBinViewModel(repository) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

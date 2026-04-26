@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:text="New Car Fund"
-            android:textColor="@color/white"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toStartOf="@id/layoutProgress"
@@ -58,7 +58,7 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="4dp"
             android:text="Due: Dec 2025"
-            android:textColor="@color/color_slate_light"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             app:layout_constraintEnd_toStartOf="@id/layoutProgress"
             app:layout_constraintStart_toEndOf="@id/tvGoalIcon"
@@ -80,7 +80,7 @@
                 android:progress="25"
                 app:indicatorColor="@color/deep_blue_primary"
                 app:indicatorSize="56dp"
-                app:trackColor="@color/color_slate_background"
+                app:trackColor="@color/color_border"
                 app:trackThickness="6dp" />
 
             <TextView
@@ -89,7 +89,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="25%"
-                android:textColor="@color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="10sp"
                 android:textStyle="bold" />
         </FrameLayout>

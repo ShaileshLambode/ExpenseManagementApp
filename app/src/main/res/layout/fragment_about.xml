@@ -62,7 +62,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="App Version: 1.52\nBuild Number: 152"
+            android:text="App Version: 2.26\nBuild Number: 226"
             android:textColor="?android:attr/textColorSecondary"
             android:layout_marginBottom="24dp"/>
 

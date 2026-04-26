@@ -106,7 +106,7 @@ class BackupFragment : Fragment() {
             
             val uri = FileProvider.getUriForFile(
                 requireContext(),
-                "${requireContext().packageName}.provider",
+                "${requireContext().packageName}.fileprovider",
                 file
             )
             

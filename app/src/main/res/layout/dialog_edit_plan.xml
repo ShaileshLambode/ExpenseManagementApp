@@ -80,11 +80,11 @@
 
     </LinearLayout>
     
-    <com.google.android.material.materialswitch.MaterialSwitch
-        android:id="@+id/switchEditUndefinedDate"
+    <CheckBox
+        android:id="@+id/cbNoFixedDate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Undefined Due Date"
+        android:text="No fixed date"
         android:layout_marginBottom="8dp"/>
 
     <RadioGroup

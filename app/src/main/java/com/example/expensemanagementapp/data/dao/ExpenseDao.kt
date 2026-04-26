@@ -43,31 +43,40 @@ interface ExpenseDao {
     @Update
     suspend fun updateTransaction(transaction: TransactionEntity)
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId ORDER BY timestamp DESC LIMIT 15")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 ORDER BY timestamp DESC LIMIT 15")
     fun getRecentTransactions(profileId: Int): LiveData<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 ORDER BY timestamp DESC LIMIT :limit OFFSET :offset")
     suspend fun getTransactionsPaged(profileId: Int, limit: Int, offset: Int): List<TransactionEntity>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE budget_profile_id = :profileId AND transaction_type = 'EXPENSE' AND timestamp >= :startOfDay AND timestamp < :endOfDay")
+    @Query("SELECT SUM(amount) FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND transaction_type = 'EXPENSE' AND timestamp >= :startOfDay AND timestamp < :endOfDay")
     fun getTodayTotalExpense(profileId: Int, startOfDay: Long, endOfDay: Long): LiveData<Double?>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 ORDER BY timestamp DESC")
     fun getAllTransactions(profileId: Int): LiveData<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND transaction_type IN (:types) ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND transaction_type IN (:types) ORDER BY timestamp DESC")
     fun getTransactionsByTypes(profileId: Int, types: List<String>): LiveData<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND timestamp >= :start AND timestamp <= :end AND transaction_type IN (:types) ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp >= :start AND timestamp <= :end AND transaction_type IN (:types) ORDER BY timestamp DESC")
     fun getTransactionsByDateAndTypes(profileId: Int, start: Long, end: Long, types: List<String>): LiveData<List<TransactionEntity>>
 
-    @Query("SELECT SUM(amount) FROM transactions WHERE budget_profile_id = :profileId AND transaction_type = :type AND timestamp >= :start AND timestamp <= :end")
+    @Query("SELECT SUM(amount) FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND transaction_type = :type AND timestamp >= :start AND timestamp <= :end")
     fun getSumByTypeAndDateRange(profileId: Int, type: String, start: Long, end: Long): LiveData<Double?>
 
-    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE budget_profile_id = :profileId AND timestamp BETWEEN :start AND :end AND transaction_type = 'EXPENSE' GROUP BY category")
+    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp BETWEEN :start AND :end AND transaction_type = 'EXPENSE' GROUP BY category")
     fun getCategoryBreakdown(profileId: Int, start: Long, end: Long): LiveData<List<CategorySum>>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND timestamp BETWEEN :start AND :end ORDER BY timestamp ASC")
+    @Query("SELECT category, SUM(amount) as total FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp BETWEEN :start AND :end AND transaction_type = 'INCOME' GROUP BY category")
+    fun getIncomeCategoryBreakdown(profileId: Int, start: Long, end: Long): LiveData<List<CategorySum>>
+
+    @Query("SELECT transaction_type as category, SUM(amount) as total FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp BETWEEN :start AND :end GROUP BY transaction_type")
+    fun getIncomeVsExpenseTotals(profileId: Int, start: Long, end: Long): LiveData<List<CategorySum>>
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND transaction_type = :type AND timestamp BETWEEN :start AND :end")
+    fun getSumByTypeSync(profileId: Int, type: String, start: Long, end: Long): LiveData<Double?>
+
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp BETWEEN :start AND :end ORDER BY timestamp ASC")
     fun getTrendTransactions(profileId: Int, start: Long, end: Long): LiveData<List<TransactionEntity>>
 
     // --- Pending Plans ---
@@ -77,7 +86,7 @@ interface ExpenseDao {
     @Update
     suspend fun updatePlan(plan: PendingPlanEntity)
 
-    @Query("SELECT * FROM pending_plans WHERE budget_profile_id = :profileId AND status = 'PENDING' ORDER BY due_date ASC")
+    @Query("SELECT * FROM pending_plans WHERE budget_profile_id = :profileId AND is_deleted = 0 AND status = 'PENDING' ORDER BY due_date ASC")
     fun getPendingPlans(profileId: Int): LiveData<List<PendingPlanEntity>>
 
     @Delete
@@ -93,13 +102,13 @@ interface ExpenseDao {
     @Update
     suspend fun updateCategory(category: CategoryEntity)
 
-    @Query("SELECT * FROM categories")
+    @Query("SELECT * FROM categories WHERE is_deleted = 0")
     fun getAllCategories(): LiveData<List<CategoryEntity>>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
     suspend fun getTransactionsByDateSync(profileId: Int, start: Long, end: Long): List<TransactionEntity>
 
-    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND timestamp >= :start AND timestamp <= :end AND transaction_type IN (:types) ORDER BY timestamp DESC")
+    @Query("SELECT * FROM transactions WHERE budget_profile_id = :profileId AND is_deleted = 0 AND timestamp >= :start AND timestamp <= :end AND transaction_type IN (:types) ORDER BY timestamp DESC")
     suspend fun getTransactionsByDateAndTypesSync(profileId: Int, start: Long, end: Long, types: List<String>): List<TransactionEntity>
 
     // --- Sync Methods for Backup ---
@@ -109,13 +118,13 @@ interface ExpenseDao {
     @Query("SELECT * FROM balances")
     suspend fun getAllBalancesSync(): List<BalanceEntity>
 
-    @Query("SELECT * FROM transactions")
+    @Query("SELECT * FROM transactions WHERE is_deleted = 0")
     suspend fun getAllTransactionsSync(): List<TransactionEntity>
 
-    @Query("SELECT * FROM categories")
+    @Query("SELECT * FROM categories WHERE is_deleted = 0")
     suspend fun getAllCategoriesSync(): List<CategoryEntity>
 
-    @Query("SELECT * FROM pending_plans")
+    @Query("SELECT * FROM pending_plans WHERE is_deleted = 0")
     suspend fun getAllPendingPlansSync(): List<PendingPlanEntity>
 
     // --- Profile ---
@@ -192,7 +201,7 @@ interface ExpenseDao {
     @Query("SELECT SUM(amount) FROM balances")
     fun getTotalCombinedBalance(): LiveData<Double?>
 
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC LIMIT 5")
+    @Query("SELECT * FROM transactions WHERE is_deleted = 0 ORDER BY timestamp DESC LIMIT 5")
     fun getRecentTransactionsAllProfiles(): LiveData<List<TransactionEntity>>
 
     @Query("SELECT budget_profile_id, SUM(amount) as total FROM balances GROUP BY budget_profile_id")
@@ -214,7 +223,70 @@ interface ExpenseDao {
              updateBalance(currentBalance.copy(amount = newAmount, last_updated = System.currentTimeMillis()))
         }
 
-        // 2. Delete Transaction
-        deleteTransaction(transaction)
+        // 2. Soft Delete Transaction
+        softDeleteTransaction(transaction.id, System.currentTimeMillis())
     }
+
+    @androidx.room.Transaction
+    suspend fun restoreTransactionWithBalanceUpdate(transaction: TransactionEntity) {
+        // 1. Re-apply Balance
+        val currentBalance = getBalance(transaction.mode, transaction.budget_profile_id)
+        var newAmount = currentBalance?.amount ?: 0.0
+        
+        if (transaction.transaction_type == "EXPENSE") {
+            newAmount -= transaction.amount
+        } else if (transaction.transaction_type == "INCOME") {
+            newAmount += transaction.amount
+        }
+        
+        val updatedBalance = currentBalance?.copy(amount = newAmount, last_updated = System.currentTimeMillis()) 
+            ?: BalanceEntity(
+                budget_profile_id = transaction.budget_profile_id,
+                type = transaction.mode, 
+                amount = newAmount, 
+                last_updated = System.currentTimeMillis()
+            )
+            
+        if (currentBalance != null) updateBalance(updatedBalance) else insertBalance(updatedBalance)
+
+        // 2. Restore Transaction and update its balance_after
+        restoreTransaction(transaction.id)
+        updateTransaction(transaction.copy(balance_after = newAmount))
+    }
+
+    @Query("UPDATE transactions SET is_deleted = 1, deleted_at = :deletedAt WHERE id = :id")
+    suspend fun softDeleteTransaction(id: Int, deletedAt: Long)
+
+    @Query("UPDATE transactions SET is_deleted = 0, deleted_at = NULL WHERE id = :id")
+    suspend fun restoreTransaction(id: Int)
+
+    @Query("DELETE FROM transactions WHERE is_deleted = 1 AND deleted_at < :cutoff")
+    suspend fun purgeOldDeletedTransactions(cutoff: Long)
+    
+    @Query("SELECT * FROM transactions WHERE is_deleted = 1")
+    fun getDeletedTransactions(): LiveData<List<TransactionEntity>>
+
+    @Query("UPDATE pending_plans SET is_deleted = 1, deleted_at = :deletedAt WHERE id = :id")
+    suspend fun softDeletePlan(id: Int, deletedAt: Long)
+
+    @Query("UPDATE pending_plans SET is_deleted = 0, deleted_at = NULL WHERE id = :id")
+    suspend fun restorePlan(id: Int)
+
+    @Query("DELETE FROM pending_plans WHERE is_deleted = 1 AND deleted_at < :cutoff")
+    suspend fun purgeOldDeletedPlans(cutoff: Long)
+
+    @Query("SELECT * FROM pending_plans WHERE is_deleted = 1")
+    fun getDeletedPlans(): LiveData<List<PendingPlanEntity>>
+
+    @Query("UPDATE categories SET is_deleted = 1, deleted_at = :deletedAt WHERE id = :id")
+    suspend fun softDeleteCategory(id: Int, deletedAt: Long)
+
+    @Query("UPDATE categories SET is_deleted = 0, deleted_at = NULL WHERE id = :id")
+    suspend fun restoreCategory(id: Int)
+
+    @Query("DELETE FROM categories WHERE is_deleted = 1 AND deleted_at < :cutoff")
+    suspend fun purgeOldDeletedCategories(cutoff: Long)
+    
+    @Query("SELECT * FROM categories WHERE is_deleted = 1")
+    fun getDeletedCategories(): LiveData<List<CategoryEntity>>
 }

@@ -6,9 +6,13 @@
             android:icon="@drawable/ic_history"
             android:title="Transaction History" />
         <item
-            android:id="@+id/nav_backup"
+            android:id="@+id/navigation_backup"
             android:icon="@drawable/ic_restore"
             android:title="Backup &amp; Restore" />
+        <item
+            android:id="@+id/navigation_recycle_bin"
+            android:icon="@android:drawable/ic_menu_delete"
+            android:title="Recycle Bin 🗑️" />
         <item
             android:id="@+id/nav_feedback"
             android:icon="@android:drawable/ic_menu_edit"
@@ -25,5 +29,9 @@
             android:id="@+id/nav_about"
             android:icon="@android:drawable/ic_menu_info_details"
             android:title="About Us" />
+        <item
+            android:id="@+id/nav_whats_new"
+            android:icon="@android:drawable/ic_menu_recent_history"
+            android:title="What's New ✨" />
     </group>
 </menu>

@@ -51,6 +51,14 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
 
         viewModel.activeProfileId.observe(viewLifecycleOwner) { id ->
             currentProfileId = id
+            
+            // Apply profile color to Save button
+            viewModel.allProfiles.value?.find { it.id == id }?.let { profile ->
+                try {
+                    val colorInt = android.graphics.Color.parseColor(profile.color)
+                    binding.btnSave.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                } catch (e: Exception) {}
+            }
         }
 
         setupKeypad()
@@ -63,26 +71,53 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
         binding.btnAddCategory.setOnClickListener {
             showAddCategoryDialog()
         }
+
+        binding.toggleGroupType.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                if (checkedId == R.id.btnIncome) {
+                    binding.layoutCategory.visibility = View.GONE
+                } else {
+                    binding.layoutCategory.visibility = View.VISIBLE
+                }
+            }
+        }
     }
 
     private fun showAddCategoryDialog() {
-        val editText = android.widget.EditText(requireContext())
-        editText.hint = "Category Name"
+        val context = requireContext()
+        val linearLayout = android.widget.LinearLayout(context)
+        linearLayout.orientation = android.widget.LinearLayout.VERTICAL
         val padding = (16 * resources.displayMetrics.density).toInt()
-        val container = android.widget.FrameLayout(requireContext())
-        container.addView(editText)
-        editText.setPadding(padding, padding, padding, padding)
+        linearLayout.setPadding(padding, padding, padding, padding)
 
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        val etEmoji = android.widget.EditText(context)
+        etEmoji.hint = "Emoji (e.g. 🍔)"
+        etEmoji.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        val etName = android.widget.EditText(context)
+        etName.hint = "Category Name"
+        etName.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        linearLayout.addView(etEmoji)
+        linearLayout.addView(etName)
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
             .setTitle("New Category")
-            .setView(container)
+            .setView(linearLayout)
             .setPositiveButton("Add") { _, _ ->
-                val name = editText.text.toString()
+                val name = etName.text.toString()
+                val emoji = etEmoji.text.toString()
                 if (name.isNotBlank()) {
                     lifecycleScope.launch {
                         repository.insertCategory(com.example.expensemanagementapp.data.entity.CategoryEntity(
                             name = name,
-                            icon = "ic_other"
+                            icon = emoji.ifBlank { "📁" }
                         ))
                     }
                 }
@@ -132,16 +167,16 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
     private fun setupSpinners() {
         // Categories
         viewModel.allCategories.observe(viewLifecycleOwner) { categories ->
-            val categoryNames = categories.map { it.name }.distinct().toMutableList()
-            categoryNames.add("Edit Categories...")
+            val displayList = categories.map { it.name }.distinct().toMutableList()
+            displayList.add("Edit Categories...")
             
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categoryNames)
+            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, displayList)
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             binding.spinnerCategory.adapter = adapter
             
             binding.spinnerCategory.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
-                    if (categoryNames[position] == "Edit Categories...") {
+                    if (displayList[position] == "Edit Categories...") {
                         showManageCategoriesDialog(categories)
                         binding.spinnerCategory.setSelection(0)
                     }
@@ -176,10 +211,12 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
         val inflater = android.view.LayoutInflater.from(context)
         categories.forEach { category ->
             val view = inflater.inflate(R.layout.item_manage_category, linearLayout, false)
+            val tvEmoji = view.findViewById<android.widget.TextView>(R.id.tvCategoryEmoji)
             val tvName = view.findViewById<android.widget.TextView>(R.id.tvCategoryName)
             val btnEdit = view.findViewById<android.widget.ImageButton>(R.id.btnEditCategory)
             val btnDelete = view.findViewById<android.widget.ImageButton>(R.id.btnDeleteCategory)
 
+            tvEmoji.text = category.icon ?: "📁"
             tvName.text = category.name
 
             btnEdit.setOnClickListener {
@@ -208,21 +245,43 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun showEditCategoryDialog(category: com.example.expensemanagementapp.data.entity.CategoryEntity) {
-        val editText = android.widget.EditText(requireContext())
-        editText.setText(category.name)
+        val context = requireContext()
+        val linearLayout = android.widget.LinearLayout(context)
+        linearLayout.orientation = android.widget.LinearLayout.VERTICAL
         val padding = (16 * resources.displayMetrics.density).toInt()
-        val container = android.widget.FrameLayout(requireContext())
-        container.addView(editText)
-        editText.setPadding(padding, padding, padding, padding)
+        linearLayout.setPadding(padding, padding, padding, padding)
 
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        val etEmoji = android.widget.EditText(context)
+        etEmoji.hint = "Emoji (e.g. 🍔)"
+        etEmoji.setText(category.icon ?: "")
+        etEmoji.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        val etName = android.widget.EditText(context)
+        etName.hint = "Category Name"
+        etName.setText(category.name)
+        etName.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        linearLayout.addView(etEmoji)
+        linearLayout.addView(etName)
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
             .setTitle("Edit Category")
-            .setView(container)
+            .setView(linearLayout)
             .setPositiveButton("Save") { _, _ ->
-                val newName = editText.text.toString()
+                val newName = etName.text.toString()
+                val newEmoji = etEmoji.text.toString()
                 if (newName.isNotBlank()) {
                     lifecycleScope.launch {
-                        repository.updateCategory(category.copy(name = newName))
+                        repository.updateCategory(category.copy(
+                            name = newName,
+                            icon = newEmoji.ifBlank { "📁" }
+                        ))
                     }
                 }
             }
@@ -235,7 +294,7 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
         val title = binding.etTitle.text.toString()
         val type = if (binding.toggleGroupType.checkedButtonId == R.id.btnExpense) "EXPENSE" else "INCOME"
         val mode = binding.spinnerMode.selectedItem.toString()
-        val category = binding.spinnerCategory.selectedItem?.toString() ?: "Others"
+        val category = if (type == "INCOME") "Income" else (binding.spinnerCategory.selectedItem?.toString() ?: "Others")
         
         if (amount <= 0) {
             Toast.makeText(requireContext(), "Enter a valid amount", Toast.LENGTH_SHORT).show()
@@ -248,18 +307,45 @@ class AddTransactionBottomSheet : BottomSheetDialogFragment() {
         }
 
         currentProfileId?.let { profileId ->
-            val transaction = TransactionEntity(
-                budget_profile_id = profileId,
-                title = title,
-                amount = amount,
-                mode = mode,
-                category = category,
-                transaction_type = type,
-                timestamp = System.currentTimeMillis(),
-                balance_after = 0.0
-            )
-            viewModel.addTransaction(transaction)
-            dismiss()
+            if (type == "EXPENSE") {
+                lifecycleScope.launch {
+                    val balance = repository.getBalance(mode, profileId)
+                    val currentAmount = balance?.amount ?: 0.0
+                    if (currentAmount - amount < 0) {
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("Insufficient Balance")
+                            .setMessage("Your $mode balance is too low to complete this transaction. Please adjust your balance or choose a different account.")
+                            .setPositiveButton("OK", null)
+                            .show()
+                        return@launch
+                    }
+                    val transaction = TransactionEntity(
+                        budget_profile_id = profileId,
+                        title = title,
+                        amount = amount,
+                        mode = mode,
+                        category = category,
+                        transaction_type = type,
+                        timestamp = System.currentTimeMillis(),
+                        balance_after = 0.0
+                    )
+                    viewModel.addTransaction(transaction)
+                    dismiss()
+                }
+            } else {
+                val transaction = TransactionEntity(
+                    budget_profile_id = profileId,
+                    title = title,
+                    amount = amount,
+                    mode = mode,
+                    category = category,
+                    transaction_type = type,
+                    timestamp = System.currentTimeMillis(),
+                    balance_after = 0.0
+                )
+                viewModel.addTransaction(transaction)
+                dismiss()
+            }
         } ?: run {
             Toast.makeText(requireContext(), "No active profile selected", Toast.LENGTH_SHORT).show()
         }

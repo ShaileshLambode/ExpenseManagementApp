@@ -26,6 +26,9 @@ class DashboardViewModel(private val repository: ExpenseRepository) : ViewModel(
     private val _selectedRange = MutableLiveData("MONTH") // WEEK or MONTH
     val selectedRange: LiveData<String> = _selectedRange
 
+    private val _selectedTrendRange = MutableLiveData("MONTH")
+    val selectedTrendRange: LiveData<String> = _selectedTrendRange
+
     // Balances for active profile
     val allBalances: LiveData<List<BalanceEntity>> = activeProfileId.switchMap { profileId ->
         if (profileId != null) {
@@ -115,7 +118,7 @@ class DashboardViewModel(private val repository: ExpenseRepository) : ViewModel(
         }
     }
 
-    // Category Breakdown for selected range
+    // Category Breakdown for selected range (EXPENSE)
     val categoryBreakdown: LiveData<List<CategorySum>> = MediatorLiveData<List<CategorySum>>().apply {
         var range = _selectedRange.value ?: "MONTH"
         var profileId: Int? = null
@@ -140,9 +143,59 @@ class DashboardViewModel(private val repository: ExpenseRepository) : ViewModel(
         }
     }
 
-    // Trend Data
-    val trendData: LiveData<Pair<List<Double>, List<Double>>> = MediatorLiveData<Pair<List<Double>, List<Double>>>().apply {
+    // Income Category Breakdown for selected range
+    val incomeBreakdown: LiveData<List<CategorySum>> = MediatorLiveData<List<CategorySum>>().apply {
         var range = _selectedRange.value ?: "MONTH"
+        var profileId: Int? = null
+
+        fun update() {
+            val id = profileId
+            if (id != null) {
+                val (start, end) = getDateRange(range)
+                val liveData = repository.getIncomeCategoryBreakdown(id, start, end)
+                removeSource(liveData)
+                addSource(liveData) { value = it }
+            }
+        }
+
+        addSource(_selectedRange) { r ->
+            range = r
+            update()
+        }
+        addSource(activeProfileId) { id ->
+            profileId = id
+            update()
+        }
+    }
+
+    // Income vs Expense Totals for selected range (for "Both" mode)
+    val incomeVsExpenseTotals: LiveData<List<CategorySum>> = MediatorLiveData<List<CategorySum>>().apply {
+        var range = _selectedRange.value ?: "MONTH"
+        var profileId: Int? = null
+
+        fun update() {
+            val id = profileId
+            if (id != null) {
+                val (start, end) = getDateRange(range)
+                val liveData = repository.getIncomeVsExpenseTotals(id, start, end)
+                removeSource(liveData)
+                addSource(liveData) { value = it }
+            }
+        }
+
+        addSource(_selectedRange) { r ->
+            range = r
+            update()
+        }
+        addSource(activeProfileId) { id ->
+            profileId = id
+            update()
+        }
+    }
+
+    // Trend Data
+    val trendData: LiveData<Triple<List<Double>, List<Double>, List<Long>>> = MediatorLiveData<Triple<List<Double>, List<Double>, List<Long>>>().apply {
+        var range = _selectedTrendRange.value ?: "MONTH"
         var profileId: Int? = null
 
         fun update() {
@@ -193,7 +246,7 @@ class DashboardViewModel(private val repository: ExpenseRepository) : ViewModel(
                                 }
                             }
                         }
-                        emit(Pair(dailyExpense.values.toList(), dailyIncome.values.toList()))
+                        emit(Triple(dailyExpense.values.toList(), dailyIncome.values.toList(), dailyExpense.keys.toList()))
                     }
                 }
                 removeSource(liveData)
@@ -201,7 +254,7 @@ class DashboardViewModel(private val repository: ExpenseRepository) : ViewModel(
             }
         }
 
-        addSource(_selectedRange) { r ->
+        addSource(_selectedTrendRange) { r ->
             range = r
             update()
         }
@@ -213,6 +266,10 @@ class DashboardViewModel(private val repository: ExpenseRepository) : ViewModel(
 
     fun setRange(range: String) {
         _selectedRange.value = range
+    }
+
+    fun setTrendRange(range: String) {
+        _selectedTrendRange.value = range
     }
 
     fun updateBalance(type: String, newAmount: Double) {

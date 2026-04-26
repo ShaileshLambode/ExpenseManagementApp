@@ -6,41 +6,28 @@ Mulya is a privacy-focused, offline-first personal finance application for Andro
 
 ## ✨ Features
 
+- **Interactive Trend Charts**: Experience your data with touch-enabled charts. Swipe to see exact amounts and dates at any point in time.
 - **Multiple Budget Profiles**: Create and switch between distinct financial profiles (e.g., Personal, Business) seamlessly.
+- **Smart Recycle Bin**: Accidentally deleted something? Restore it within 30 days. Balances are automatically re-adjusted on restoration.
+- **Savings Goals**: Set up and track custom savings goals with visual progress bars.
+- **Recurring Transactions**: Automate your subscriptions, bills, or regular income with customizable frequencies (Daily, Weekly, Monthly).
 - **Dashboard**: Visual overview of your financial health with sparklines, donut charts, and an integrated "Upcoming Actions" summary.
-- **Transaction Tracking**: Easily record Expenses (Bank/Cash) and Revenue using a custom-built numeric keypad.
-- **Savings Goals**: Set up and track custom savings goals. Adding money to goals automatically updates your balances.
-- **Recurring Transactions**: Automate your subscriptions, bills, or regular income with customizable frequencies.
-- **Upcoming Actions**: Schedule future payments and track receivables directly from the dashboard bottom sheets.
-- **Category Management**: Edit, delete, and add new transaction categories dynamically.
-- **History**: Detailed transaction history with date grouping and filters (Today, Week, Month).
-- **Data Privacy**: 100% offline. Your data never leaves your device.
-- **Backup & Restore**: Securely backup your entire database to a local JSON file and restore when needed.
+- **Transaction Tracking**: Record Expenses and Revenue using a custom-built numeric keypad.
+- **Guided Feedback**: A new portal to report bugs or suggest features directly to the developers.
+- **Backup & Restore**: Securely backup your entire database to a local JSON file and restore with built-in data integrity checks.
 - **Export**: Export financial records to CSV or PDF formats.
-- **Customization**: Dark Mode support, Currency formatting (Indian/International), and a detailed User Profile.
-- **Zero Ads**: Clean, interruption-free user experience.
-
-## 📱 Screenshots
-
-| Dashboard | Upcoming Actions | Add Transaction |
-|:---:|:---:|:---:|
-| ![Dashboard] | ![Actions] | ![Add] |
-
-| History | Settings | Profile |
-|:---:|:---:|:---:|
-| ![History] | ![Settings] | ![Profile] |
-
-*(Note: Add screenshots to a `docs/` folder in your repo)*
+- **Customization**: Dark Mode support, Currency formatting, and a detailed User Profile.
+- **Zero Ads & Privacy**: 100% offline. Your data never leaves your device. No ads, no tracking.
 
 ## 🛠 Tech Stack
 
 - **Language**: Kotlin
 - **Architecture**: MVVM (Model-View-ViewModel)
 - **Database**: Room Database (SQLite)
-- **Concurrency**: Coroutines & Flow
-- **UI**: XML Layouts, Material Design Components, BottomSheetDialogFragments
+- **Concurrency**: Coroutines & WorkManager (for recurring tasks)
+- **UI**: XML Layouts, Material Design 3, Custom Canvas Drawing (for interactive charts)
 - **Navigation**: Android Jetpack Navigation
-- **Other Libs**: Gson (JSON parsing), Custom canvas drawing for Charts
+- **Other Libs**: Gson (JSON parsing), DotsIndicator (Onboarding)
 
 ## 📂 Project Structure
 
@@ -50,18 +37,20 @@ ExpenseManagementApp/
 │   ├── src/main/java/com/example/expensemanagementapp/
 │   │   ├── data/             # Room Database, Entities, DAO
 │   │   ├── repository/       # Data Repositories
-│   │   ├── ui/               # Fragments, Activities, Adapters, BottomSheets
-│   │   │   ├── add/          # Custom Keypad & BottomSheets for entries
-│   │   │   ├── backup/       # JSON Backup & Restore logic
-│   │   │   ├── custom/       # Custom Views (DonutChart)
-│   │   │   ├── dashboard/    # Dashboard UI & Analytics
+│   │   ├── ui/               # Fragments, Activities, Adapters
+│   │   │   ├── add/          # Custom Keypad & Transaction entry
+│   │   │   ├── backup/       # JSON Backup & Restore (Self-healing)
+│   │   │   ├── custom/       # Interactive Canvas Views (Charts)
+│   │   │   ├── dashboard/    # Dashboard & Analytics
+│   │   │   ├── help/         # Help, Docs & Guided Feedback
 │   │   │   ├── history/      # Transaction history & filtering
-│   │   │   ├── plans/        # Recurring and Upcoming Action logic
-│   │   │   ├── profile/      # User Profile
-│   │   │   └── settings/     # App Settings & Preferences
-│   │   ├── utils/            # Helper classes (Export, Formatting)
+│   │   │   ├── plans/        # Recurring & Upcoming Action logic
+│   │   │   ├── profile/      # User Profile management
+│   │   │   ├── recyclebin/   # Deleted item recovery (30-day purge)
+│   │   │   └── settings/     # App Settings & "What's New"
+│   │   ├── utils/            # Helper classes (Export, BackupManager)
 │   │   └── viewmodel/        # ViewModels for UI state management
-│   └── src/main/res/         # XML Layouts, Drawables, Strings, Themes
+│   └── src/main/res/         # XML Layouts, Drawables, Themes
 ```
 
 ## 🚀 Getting Started

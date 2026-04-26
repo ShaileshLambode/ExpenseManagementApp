@@ -52,11 +52,29 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
         val factory = ViewModelFactory(repository)
         viewModel = ViewModelProvider(requireActivity(), factory)[PlansViewModel::class.java]
 
+         viewModel.activeProfileId.observe(viewLifecycleOwner) { id ->
+            // Apply profile color to Save button
+            viewModel.allProfiles.value?.find { it.id == id }?.let { profile ->
+                try {
+                    val colorInt = android.graphics.Color.parseColor(profile.color)
+                    binding.btnSave.backgroundTintList = android.content.res.ColorStateList.valueOf(colorInt)
+                } catch (e: Exception) {}
+            }
+        }
+
         setupKeypad()
         setupSpinners()
         
         binding.btnSelectDate.setOnClickListener {
             showDatePicker()
+        }
+        
+        binding.cbNoFixedDate.setOnCheckedChangeListener { _, isChecked ->
+            binding.btnSelectDate.isEnabled = !isChecked
+            if (isChecked) {
+                selectedDueDate = null
+                binding.btnSelectDate.text = "Select Due Date"
+            }
         }
         
         binding.btnSave.setOnClickListener {
@@ -65,6 +83,16 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
 
         binding.btnAddCategory.setOnClickListener {
             showAddCategoryDialog()
+        }
+
+        binding.toggleGroupType.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                if (checkedId == R.id.btnIncome) {
+                    binding.layoutCategory.visibility = View.GONE
+                } else {
+                    binding.layoutCategory.visibility = View.VISIBLE
+                }
+            }
         }
     }
 
@@ -84,23 +112,40 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun showAddCategoryDialog() {
-        val editText = android.widget.EditText(requireContext())
-        editText.hint = "Category Name"
+        val context = requireContext()
+        val linearLayout = android.widget.LinearLayout(context)
+        linearLayout.orientation = android.widget.LinearLayout.VERTICAL
         val padding = (16 * resources.displayMetrics.density).toInt()
-        val container = android.widget.FrameLayout(requireContext())
-        container.addView(editText)
-        editText.setPadding(padding, padding, padding, padding)
+        linearLayout.setPadding(padding, padding, padding, padding)
 
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        val etEmoji = android.widget.EditText(context)
+        etEmoji.hint = "Emoji (e.g. 🍔)"
+        etEmoji.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        val etName = android.widget.EditText(context)
+        etName.hint = "Category Name"
+        etName.layoutParams = android.widget.LinearLayout.LayoutParams(
+            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        linearLayout.addView(etEmoji)
+        linearLayout.addView(etName)
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
             .setTitle("New Category")
-            .setView(container)
+            .setView(linearLayout)
             .setPositiveButton("Add") { _, _ ->
-                val name = editText.text.toString()
+                val name = etName.text.toString()
+                val emoji = etEmoji.text.toString()
                 if (name.isNotBlank()) {
                     lifecycleScope.launch {
                         repository.insertCategory(com.example.expensemanagementapp.data.entity.CategoryEntity(
                             name = name,
-                            icon = "ic_other"
+                            icon = emoji.ifBlank { "📁" }
                         ))
                     }
                 }
@@ -133,7 +178,7 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun findButtonsAndSetListener(root: View, listener: View.OnClickListener) {
-        if (root is Button && root.id != R.id.btnSave && root.id != R.id.btnBackspace 
+        if (root is Button && root !is android.widget.CheckBox && root.id != R.id.btnSave && root.id != R.id.btnBackspace 
             && root.id != R.id.btnExpense && root.id != R.id.btnIncome && root.id != R.id.btnSelectDate) {
             root.setOnClickListener(listener)
         } else if (root is ViewGroup) {
@@ -150,16 +195,17 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
     private fun setupSpinners() {
         // Categories
         viewModel.allCategories.observe(viewLifecycleOwner) { categories ->
-            val categoryNames = categories.map { it.name }.distinct().toMutableList()
-            categoryNames.add("Edit Categories...")
+            val displayList = categories.map { it.name }.distinct().toMutableList()
+            displayList.add("Edit Categories...")
             
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, categoryNames)
+            // Still need to map display names back to actual categories when saving
+            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, displayList)
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             binding.spinnerCategory.adapter = adapter
             
             binding.spinnerCategory.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
-                    if (categoryNames[position] == "Edit Categories...") {
+                    if (displayList[position] == "Edit Categories...") {
                         // In a real scenario we might open Manage Categories here. Just reset to 0 for simplicity.
                         binding.spinnerCategory.setSelection(0)
                     }
@@ -180,7 +226,7 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
         val title = binding.etTitle.text.toString()
         val type = if (binding.toggleGroupType.checkedButtonId == R.id.btnExpense) "PAY" else "RECEIVE"
         val mode = binding.spinnerMode.selectedItem.toString()
-        val category = binding.spinnerCategory.selectedItem?.toString() ?: "Others"
+        val category = if (type == "RECEIVE") "Income" else (binding.spinnerCategory.selectedItem?.toString() ?: "Others")
         
         if (amount <= 0) {
             Toast.makeText(requireContext(), "Enter a valid amount", Toast.LENGTH_SHORT).show()
@@ -192,7 +238,7 @@ class AddActionBottomSheet : BottomSheetDialogFragment() {
             return
         }
 
-        if (selectedDueDate == null) {
+        if (!binding.cbNoFixedDate.isChecked && selectedDueDate == null) {
             Toast.makeText(requireContext(), "Select a due date", Toast.LENGTH_SHORT).show()
             return
         }

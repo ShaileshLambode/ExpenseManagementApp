@@ -11,11 +11,10 @@ class BudgetProfileViewModel(private val repository: ExpenseRepository) : ViewMo
 
     val allProfiles: LiveData<List<BudgetProfileEntity>> = repository.allProfiles
 
-    fun addProfile(name: String, color: String, icon: String) {
+    fun addProfile(name: String, icon: String) {
         viewModelScope.launch {
-            val profile = BudgetProfileEntity(
+            val profile = com.example.expensemanagementapp.data.entity.BudgetProfileEntity(
                 name = name,
-                color = color,
                 icon = icon
             )
             repository.insertBudgetProfile(profile)
@@ -30,7 +29,7 @@ class BudgetProfileViewModel(private val repository: ExpenseRepository) : ViewMo
 
     fun deleteProfile(profile: BudgetProfileEntity) {
         viewModelScope.launch {
-            repository.deleteBudgetProfile(profile)
+            repository.softDeleteBudgetProfile(profile.id, System.currentTimeMillis())
         }
     }
 

@@ -8,8 +8,8 @@ import com.example.expensemanagementapp.repository.ExpenseRepository
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(private val repository: ExpenseRepository) : ViewModel() {
-
     val userProfile: LiveData<ProfileEntity?> = repository.getProfile()
+    val allProfiles = repository.allProfiles
 
     fun saveProfile(name: String, dob: Long?, city: String, state: String, mobile: String, imageUri: String?, gender: String?) {
         val profile = ProfileEntity(

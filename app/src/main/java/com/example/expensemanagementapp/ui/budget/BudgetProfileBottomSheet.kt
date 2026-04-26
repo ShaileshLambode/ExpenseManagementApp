@@ -52,6 +52,9 @@ class BudgetProfileBottomSheet : BottomSheetDialogFragment() {
                     activity?.recreate()
                 }
             },
+            onEditRequested = { profile ->
+                showEditProfileDialog(profile)
+            },
             onDeleteRequested = { profile ->
                 androidx.appcompat.app.AlertDialog.Builder(requireContext())
                     .setTitle("Delete Budget")
@@ -89,8 +92,39 @@ class BudgetProfileBottomSheet : BottomSheetDialogFragment() {
         btnAdd.setOnClickListener {
             val name = etName.text.toString()
             val icon = etIcon.text.toString().ifEmpty { "💰" }
+            
             if (name.isNotEmpty()) {
-                viewModel.addProfile(name, "#3F51B5", icon)
+                viewModel.addProfile(name, icon)
+                dialog.dismiss()
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showEditProfileDialog(profile: com.example.expensemanagementapp.data.entity.BudgetProfileEntity) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_profile, null)
+        val titleView = dialogView.findViewById<android.widget.TextView>(R.id.tvAddProfileTitle)
+        val etName = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etProfileName)
+        val etIcon = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etProfileIcon)
+        val btnAdd = dialogView.findViewById<android.widget.Button>(R.id.btnConfirmAddProfile)
+
+        titleView?.text = "Edit Budget Profile"
+
+        etName.setText(profile.name)
+        etIcon.setText(profile.icon)
+        btnAdd.text = "Save Changes"
+
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        btnAdd.setOnClickListener {
+            val name = etName.text.toString()
+            val icon = etIcon.text.toString().ifEmpty { "💰" }
+
+            if (name.isNotEmpty()) {
+                viewModel.updateProfile(profile.copy(name = name, icon = icon))
                 dialog.dismiss()
             }
         }

@@ -6,61 +6,63 @@ The application follows the **MVVM (Model-View-ViewModel)** architectural patter
 ### Layers
 
 1.  **Model (Data Layer)**
-    - **Room Database**: Acts as the single source of truth.
-    - **Entities**: Represents database tables (`TransactionEntity`, `PendingPlanEntity`).
-    - **DAO (Data Access Object)**: Defines methods to access the database.
-    - **Repository**: Mediates between the ViewModel and the Data Source.
+    - **Room Database**: Acts as the single source of truth (SQLite).
+    - **Entities**: Represents database tables (Transactions, Profiles, Goals, etc.).
+    - **DAO (Data Access Object)**: Defines methods to access and manipulate data.
+    - **Repository**: Mediates between ViewModel and Data Sources (Room, Preferences).
 
 2.  **ViewModel**
     - Holds and manages UI-related data in a lifecycle-conscious way.
-    - Uses **LiveData** or **Flow** to communicate changes to the UI.
-    - Example: `MainViewModel`, `ProfileViewModel`, `PlansViewModel`.
+    - Uses **LiveData** and **MediatorLiveData** to reactively update the UI.
+    - Example: `MainViewModel`, `BudgetProfileViewModel`, `ExpensesViewModel`, `RecycleBinViewModel`.
 
 3.  **View (UI Layer)**
     - Fragments and Activities responsible for rendering the UI.
-    - Observes the ViewModel and updates the UI accordingly.
-    - **ViewBinding**: Used for safe interaction with views.
+    - **ViewBinding**: Used for safe interaction with XML layouts.
+    - **Navigation Component**: Manages app flow via `nav_graph.xml`.
 
 ## 💾 Core Components
 
-### Database Schema
-The app uses `AppDatabase` with the following key entities:
--   **TransactionEntity**: Stores income and expense records.
-    -   Fields: `id`, `title`, `amount`, `type`, `category`, `date`, `mode` (Bank/Cash).
--   **PendingPlanEntity**: Stores future planned payments.
-    -   Fields: `id`, `title`, `amount`, `dueDate`, `isCompleted`.
+### Database Schema (Room)
+The app uses `AppDatabase` with the following core entities:
+- **BudgetProfileEntity**: Manages multiple independent budget contexts (e.g., Home, Work).
+- **TransactionEntity**: Stores income/expense records linked to a specific profile.
+- **BalanceEntity**: Tracks current Bank/Cash balances per profile.
+- **CategoryEntity**: Custom categories for transactions.
+- **GoalEntity**: Savings goals with target amounts and progress tracking.
+- **RecurringTransactionEntity**: Template for automated transactions (Daily/Weekly/Monthly).
 
-### Backup & Restore System (`BackupRestoreManager.kt`)
--   **Format**: JSON.
--   **Mechanism**:
-    -   **Backup**: Queries all tables, serializes data to JSON using GSON, and saves to the device's internal/external storage.
-    -   **Restore**: Reads the JSON file, parses it, validates structure, wipes existing tables, and inserts the restored data atomically.
+### Interactive Charts (`SparklineView.kt`, `DonutChartView.kt`)
+- **Custom Canvas Drawing**: Uses low-level `Canvas` APIs for high-performance rendering.
+- **Touch-Swipe Interaction**: Implements `OnTouchListener` to detect swipes and calculate the nearest data point on a path, providing real-time value tooltips.
+- **Dynamic Legends**: The Donut chart features an interactive legend that highlights specific slices when tapped.
 
-### PDF Export (`ExportUtils.kt`)
--   Uses Android's native `PdfDocument` API.
--   Draws text and lines programmatically via `Canvas`.
--   Supports pagination for long transaction lists.
+### Smart Backup & Restore (`BackupRestoreManager.kt`)
+- **Format**: Structured JSON.
+- **Data Integrity**: Uses `database.withTransaction` for atomic restores.
+- **Self-Healing Recovery**: During restoration, if a transaction references a missing budget profile, the manager automatically reconstructs a placeholder profile to ensure data consistency.
+- **Foreign Key Management**: Reorders insertion (Profiles -> Categories -> Transactions) to satisfy SQLite constraints.
 
-## 🎨 UI Guidelines
--   **Theme**: Material Design 3.
--   **Dark Mode**: Fully supported via `values-night` resources.
--   **Custom Views**: Custom drawing logic for charts (if applicable) or specialized RecyclerView adapters.
+### Recycle Bin Logic
+- **Soft Delete**: Items are marked `is_deleted = true` with a `deleted_at` timestamp.
+- **Auto-Purge**: A 30-day TTL (Time-To-Live) is enforced; older items are permanently removed.
+- **Balance Reconciliation**: Restoring a transaction from the bin automatically triggers a balance update to reflect the "undeleted" funds.
 
 ## 🔧 Setup & Configuration
 
 ### Prerequisites
--   Android Studio Koala or newer.
--   JDK 17.
--   Android SDK API 34 (UpsideDownCake).
+- Android Studio Koala or newer.
+- JDK 17.
+- Android SDK API 36 (VanillaIceCream).
 
 ### Build Variants
--   **Debug**: Includes logging and debugging symbols.
--   **Release**: Minified and obfuscated (configured in `build.gradle.kts`).
+- **Debug**: Standard development build.
+- **Release**: Optimized build with code shrinking (R8).
 
 ## 🔮 Future Improvements
--   **Cloud Sync**: Optional Google Drive integration.
--   **Budgeting**: Set monthly limits per category.
--   **Recurring Transactions**: Auto-add expenses each month.
+- **Cloud Sync**: Optional Google Drive or Dropbox integration for cross-device sync.
+- **Advanced Reports**: Exporting interactive HTML reports.
+- **Security**: Biometric (Fingerprint/Face) lock for the application.
 
 ---
-*Generated for Internal Development & Review*
+*Generated for Internal Development & Review - v2.26*

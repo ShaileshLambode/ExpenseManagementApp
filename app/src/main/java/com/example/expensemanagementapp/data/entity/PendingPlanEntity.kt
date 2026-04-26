@@ -25,5 +25,7 @@ data class PendingPlanEntity(
     val plan_type: String, // PAY or RECEIVE
     val due_date: Long?,
     val status: String, // PENDING or COMPLETED
-    val created_at: Long
+    val created_at: Long,
+    val is_deleted: Boolean = false,
+    val deleted_at: Long? = null
 )

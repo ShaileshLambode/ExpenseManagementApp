@@ -151,6 +151,19 @@ class ProfileFragment : Fragment() {
                 }
             }
         }
+        
+        viewModel.allProfiles.observe(viewLifecycleOwner) { profiles ->
+            val activeProfile = profiles.find { it.is_active }
+            activeProfile?.let { profile ->
+                try {
+                    val colorInt = android.graphics.Color.parseColor(profile.color)
+                    val csl = android.content.res.ColorStateList.valueOf(colorInt)
+                    binding.btnSaveProfile.backgroundTintList = csl
+                    binding.rbMale.buttonTintList = csl
+                    binding.rbFemale.buttonTintList = csl
+                } catch (e: Exception) {}
+            }
+        }
     }
 
     private fun saveProfile() {

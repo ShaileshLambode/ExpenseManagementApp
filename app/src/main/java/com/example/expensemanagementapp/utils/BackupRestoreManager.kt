@@ -25,6 +25,9 @@ data class BackupData(
     val transactions: List<TransactionEntity>,
     val categories: List<CategoryEntity>,
     val pendingPlans: List<PendingPlanEntity>,
+    val budgetProfiles: List<BudgetProfileEntity>? = null,
+    val goals: List<GoalEntity>? = null,
+    val recurringTransactions: List<RecurringTransactionEntity>? = null,
     val profile: ProfileEntity?,
     val profileImageBase64: String?,
     val preferences: Map<String, Any>
@@ -36,15 +39,21 @@ object BackupRestoreManager {
 
     suspend fun createBackup(context: Context): String = withContext(Dispatchers.IO) {
         val database = AppDatabase.getDatabase(context)
-        val dao = database.expenseDao()
+        val expenseDao = database.expenseDao()
+        val profileDao = database.budgetProfileDao()
+        val goalDao = database.goalDao()
+        val recurringDao = database.recurringTransactionDao()
 
         // 1. Fetch Data
-        val balances = dao.getAllBalancesSync()
-        val transactions = dao.getAllTransactionsSync()
-        val categories = dao.getAllCategoriesSync()
-        val pendingPlans = dao.getAllPendingPlansSync()
+        val balances = expenseDao.getAllBalancesSync()
+        val transactions = expenseDao.getAllTransactionsSync()
+        val categories = expenseDao.getAllCategoriesSync()
+        val pendingPlans = expenseDao.getAllPendingPlansSync()
+        val budgetProfiles = profileDao.getAllProfilesSync()
+        val goals = goalDao.getAllGoalsSync()
+        val recurringTransactions = recurringDao.getAllRecurringSync()
         
-        val profile = dao.getProfileSync()
+        val profile = expenseDao.getProfileSync()
         
         // 2. Profile Image
         var profileImageBase64: String? = null
@@ -70,6 +79,9 @@ object BackupRestoreManager {
             transactions = transactions,
             categories = categories,
             pendingPlans = pendingPlans,
+            budgetProfiles = budgetProfiles,
+            goals = goals,
+            recurringTransactions = recurringTransactions,
             profile = profile,
             profileImageBase64 = profileImageBase64,
             preferences = preferences
@@ -83,10 +95,10 @@ object BackupRestoreManager {
         val cacheFile = File(context.cacheDir, fileName)
         FileOutputStream(cacheFile).use { it.write(json.toByteArray()) }
         
-        // 7. Save to Downloads (Copy logic from ExportUtils)
+        // 7. Save to Downloads
         saveToDownloads(context, cacheFile, fileName)
         
-        return@withContext fileName // Return filename or success message path
+        return@withContext fileName
     }
 
     private fun saveToDownloads(context: Context, sourceFile: File, fileName: String) {
@@ -109,7 +121,6 @@ object BackupRestoreManager {
                 throw java.io.IOException("Failed to create MediaStore entry")
             }
         } else {
-            // Legacy approach
             val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
             val destFile = File(downloadsDir, fileName)
             FileInputStream(sourceFile).use { input ->
@@ -123,9 +134,12 @@ object BackupRestoreManager {
     suspend fun restoreBackup(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
         try {
             val database = AppDatabase.getDatabase(context)
-            val dao = database.expenseDao()
+            val expenseDao = database.expenseDao()
+            val profileDao = database.budgetProfileDao()
+            val goalDao = database.goalDao()
+            val recurringDao = database.recurringTransactionDao()
 
-            // 1. Stream Parse JSON (Avoid OOM)
+            // 1. Stream Parse JSON
             val backupData: BackupData = context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 InputStreamReader(inputStream).use { reader ->
                     Gson().fromJson(reader, BackupData::class.java)
@@ -140,7 +154,36 @@ object BackupRestoreManager {
                 // Clear existing data
                 database.clearAllTables()
 
-                // Restore Profile Image
+                // A. Restore Budget Profiles (Must be first for FKs)
+                backupData.budgetProfiles?.forEach { profileDao.insertProfile(it) }
+
+                // B. Recovery Mechanism for missing profiles (in case of old/corrupt backups)
+                val referencedProfileIds = mutableSetOf<Int>()
+                backupData.balances.forEach { referencedProfileIds.add(it.budget_profile_id) }
+                backupData.transactions.forEach { referencedProfileIds.add(it.budget_profile_id) }
+                backupData.pendingPlans.forEach { referencedProfileIds.add(it.budget_profile_id) }
+                
+                val activeProfileIdFromPrefs = (backupData.preferences["ACTIVE_PROFILE_ID"] as? Double)?.toInt() ?: 1
+                
+                referencedProfileIds.forEach { id ->
+                    if (profileDao.getProfileById(id) == null) {
+                        profileDao.insertProfile(
+                            BudgetProfileEntity(
+                                id = id,
+                                name = "Restored Profile $id",
+                                color = "#3F51B5",
+                                icon = "💰",
+                                is_active = (id == activeProfileIdFromPrefs),
+                                created_at = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
+
+                // C. Restore Categories (Independent)
+                backupData.categories.forEach { expenseDao.insertCategory(it) }
+
+                // D. Restore Profile Image
                 var newImageUri: String? = null
                 if (backupData.profileImageBase64 != null) {
                     try {
@@ -153,11 +196,12 @@ object BackupRestoreManager {
                     }
                 }
 
-                // Insert Data
-                backupData.balances.forEach { dao.insertBalance(it) }
-                backupData.transactions.forEach { dao.insertTransaction(it) }
-                backupData.categories.forEach { dao.insertCategory(it) }
-                backupData.pendingPlans.forEach { dao.insertPlan(it) }
+                // E. Insert Related Data
+                backupData.balances.forEach { expenseDao.insertBalance(it) }
+                backupData.transactions.forEach { expenseDao.insertTransaction(it) }
+                backupData.pendingPlans.forEach { expenseDao.insertPlan(it) }
+                backupData.goals?.forEach { goalDao.insertGoal(it) }
+                backupData.recurringTransactions?.forEach { recurringDao.insertRecurring(it) }
                 
                 if (backupData.profile != null) {
                     val restoredProfile = if (newImageUri != null) {
@@ -165,11 +209,11 @@ object BackupRestoreManager {
                     } else {
                         backupData.profile
                     }
-                    dao.insertProfile(restoredProfile)
+                    expenseDao.insertProfile(restoredProfile)
                 }
             }
 
-            // 4. Restore Preferences (Outside transaction as it's not DB)
+            // 4. Restore Preferences
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             with(prefs.edit()) {
                 clear()
@@ -180,7 +224,14 @@ object BackupRestoreManager {
                         is Int -> putInt(key, value)
                         is Long -> putLong(key, value)
                         is String -> putString(key, value)
-                        is Double -> putFloat(key, value.toFloat())
+                        is Double -> {
+                            // SharedPreferences doesn't support Double directly, check if it was Int or Float
+                            if (value == value.toInt().toDouble()) {
+                                putInt(key, value.toInt())
+                            } else {
+                                putFloat(key, value.toFloat())
+                            }
+                        }
                     }
                 }
                 apply()

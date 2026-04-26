@@ -25,5 +25,7 @@ data class GoalEntity(
     val icon: String = "🎯",
     val color: String = "#3F51B5",
     val is_completed: Boolean = false,
-    val created_at: Long = System.currentTimeMillis()
+    val created_at: Long = System.currentTimeMillis(),
+    val is_deleted: Boolean = false,
+    val deleted_at: Long? = null
 )

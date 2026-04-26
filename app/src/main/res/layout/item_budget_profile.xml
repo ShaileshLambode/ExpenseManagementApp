@@ -51,6 +51,15 @@
         android:focusable="false" />
 
     <ImageButton
+        android:id="@+id/btnEditProfile"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@android:drawable/ic_menu_edit"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="@color/text_secondary"
+        android:contentDescription="Edit Profile" />
+
+    <ImageButton
         android:id="@+id/btnDeleteProfile"
         android:layout_width="40dp"
         android:layout_height="40dp"

@@ -25,4 +25,7 @@ interface RecurringTransactionDao {
 
     @Delete
     suspend fun deleteRecurring(recurring: RecurringTransactionEntity)
+
+    @Query("SELECT * FROM recurring_transactions")
+    suspend fun getAllRecurringSync(): List<RecurringTransactionEntity>
 }

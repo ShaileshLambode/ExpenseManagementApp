@@ -46,7 +46,7 @@ class PlansAdapter(
                 val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 date.text = itemView.context.getString(R.string.due_on, dateFormat.format(Date(plan.due_date)))
             } else {
-                date.text = itemView.context.getString(R.string.no_due_date)
+                date.text = "No fixed date"
             }
             mode.text = plan.mode
             amount.text = "${if(plan.plan_type == "PAY") "-" else "+"} ${itemView.context.getString(R.string.currency_symbol)} ${plan.amount}"

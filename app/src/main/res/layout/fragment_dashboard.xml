@@ -18,6 +18,7 @@
 
             <!-- Card 1: Combined Balance Card -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBalance"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
@@ -31,12 +32,28 @@
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Active Budget Balance"
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="14sp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Active Budget Balance"
+                            android:textColor="#B3FFFFFF"
+                            android:textSize="14sp" />
+                            
+                        <ImageButton
+                            android:id="@+id/btnAdjustBalance"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:src="@android:drawable/ic_menu_edit"
+                            app:tint="#B3FFFFFF" />
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvTotalBalance"
@@ -162,13 +179,31 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:text="Upcoming Actions"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvOverdueBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@color/expense_red"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:text="0"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
 
                 <TextView
                     android:id="@+id/tvManageActions"
@@ -202,7 +237,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="12dp"
-                android:text="Spending Analytics"
+                android:text="Financial Overview"
                 android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -248,16 +283,115 @@
 
                     <com.example.expensemanagementapp.ui.custom.DonutChartView
                         android:id="@+id/donutChart"
-                        android:layout_width="match_parent"
+                        android:layout_width="200dp"
                         android:layout_height="200dp"
-                        android:layout_margin="16dp" />
+                        android:layout_gravity="center" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvCategoryLegend"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false" />
+                        android:layout_marginTop="16dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Trend Analytics Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/color_border"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Cash Flow Trend"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/toggleGroupTrendPeriod"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            app:checkedButton="@id/btnTrendMonth"
+                            app:selectionRequired="true"
+                            app:singleSelection="true">
+
+                            <Button
+                                android:id="@+id/btnTrendWeek"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:text="Week"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:textSize="10sp" />
+
+                            <Button
+                                android:id="@+id/btnTrendMonth"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:text="Month"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:textSize="10sp" />
+                        </com.google.android.material.button.MaterialButtonToggleGroup>
+                    </LinearLayout>
+
+                    <!-- Legends -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipLegendIncome"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Income"
+                            android:checked="true"
+                            android:layout_marginEnd="8dp"
+                            app:chipIcon="@drawable/bg_circle_light"
+                            app:chipIconTint="#4CAF50" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipLegendExpense"
+                            style="@style/Widget.MaterialComponents.Chip.Choice"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Expense"
+                            android:checked="true"
+                            app:chipIcon="@drawable/bg_circle_light"
+                            app:chipIconTint="#F44336" />
+                    </LinearLayout>
+
+                    <com.example.expensemanagementapp.ui.custom.SparklineView
+                        android:id="@+id/trendChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="180dp" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

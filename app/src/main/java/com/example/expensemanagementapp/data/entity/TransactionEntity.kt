@@ -25,5 +25,7 @@ data class TransactionEntity(
     val transaction_type: String, // EXPENSE or INCOME
     val timestamp: Long,
     val balance_after: Double,
-    val message: String? = null
+    val message: String? = null,
+    val is_deleted: Boolean = false,
+    val deleted_at: Long? = null
 )

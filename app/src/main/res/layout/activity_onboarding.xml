@@ -29,7 +29,11 @@
             app:layout_constraintTop_toTopOf="parent"
             app:tabBackground="@drawable/tab_selector_onboarding"
             app:tabIndicatorHeight="0dp"
-            app:tabRippleColor="@null" />
+            app:tabRippleColor="@null"
+            app:tabPaddingStart="4dp"
+            app:tabPaddingEnd="4dp"
+            app:tabMinWidth="0dp"
+            app:tabMaxWidth="32dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNext"

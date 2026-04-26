@@ -70,4 +70,22 @@
         android:name="com.example.expensemanagementapp.ui.plans.PlansFragment"
         android:label="Plans"
         tools:layout="@layout/fragment_plans" />
+
+    <fragment
+        android:id="@+id/navigation_recycle_bin"
+        android:name="com.example.expensemanagementapp.ui.recyclebin.RecycleBinFragment"
+        android:label="Recycle Bin"
+        tools:layout="@layout/fragment_recycle_bin" />
+
+    <fragment
+        android:id="@+id/navigation_feedback"
+        android:name="com.example.expensemanagementapp.ui.help.FeedbackFragment"
+        android:label="Review &amp; Feedback"
+        tools:layout="@layout/fragment_feedback" />
+
+    <fragment
+        android:id="@+id/navigation_whats_new"
+        android:name="com.example.expensemanagementapp.ui.settings.WhatsNewFragment"
+        android:label="What's New"
+        tools:layout="@layout/fragment_whats_new" />
 </navigation>

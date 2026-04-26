@@ -124,7 +124,7 @@ class HistoryViewModel(private val repository: ExpenseRepository) : ViewModel() 
     fun undoDelete() {
         viewModelScope.launch {
             lastDeletedTransaction?.let { tx ->
-                repository.addTransactionWithBalance(tx)
+                repository.restoreTransactionWithBalance(tx)
                 lastDeletedTransaction = null
             }
         }

@@ -7,5 +7,7 @@ import androidx.room.PrimaryKey
 data class CategoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
-    val icon: String // Simple string reference for now (e.g. "ic_food")
+    val icon: String, // Simple string reference for now (e.g. "ic_food")
+    val is_deleted: Boolean = false,
+    val deleted_at: Long? = null
 )

@@ -57,6 +57,11 @@ class DashboardFragment : Fragment() {
         viewModel.activeProfileBalance.observe(viewLifecycleOwner) { total ->
             tvTotalBalance.text = "₹ %.2f".format(total ?: 0.0)
         }
+        
+        val btnAdjustBalance = view.findViewById<android.widget.ImageButton>(R.id.btnAdjustBalance)
+        btnAdjustBalance.setOnClickListener {
+            showAdjustBalanceDialog()
+        }
 
         // Active Profile Balances
         viewModel.allBalances.observe(viewLifecycleOwner) { balances ->
@@ -104,8 +109,41 @@ class DashboardFragment : Fragment() {
         rvRecent.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         rvRecent.adapter = recentAdapter
 
-        viewModel.allProfiles.observe(viewLifecycleOwner) { profiles ->
+         viewModel.allProfiles.observe(viewLifecycleOwner) { profiles ->
             recentAdapter.setProfiles(profiles)
+            
+            // Apply profile color to Balance Card and other buttons
+            val activeProfile = profiles.find { it.is_active }
+            activeProfile?.let { profile ->
+                try {
+                    val colorInt = android.graphics.Color.parseColor(profile.color)
+                    val csl = android.content.res.ColorStateList.valueOf(colorInt)
+                    
+                    view.findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardBalance).setCardBackgroundColor(colorInt)
+                    view.findViewById<android.widget.Button>(R.id.btnAddAction).backgroundTintList = csl
+                    
+                    // Update Toggle Group colors
+                    val toggleGroup = view.findViewById<MaterialButtonToggleGroup>(R.id.toggleGroupPeriod)
+                    val btnRangeWeek = view.findViewById<android.widget.Button>(R.id.btnRangeWeek)
+                    val btnRangeMonth = view.findViewById<android.widget.Button>(R.id.btnRangeMonth)
+                    
+                    val toggleCsl = android.content.res.ColorStateList(
+                        arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                        intArrayOf(colorInt, android.graphics.Color.TRANSPARENT)
+                    )
+                    btnRangeWeek.backgroundTintList = toggleCsl
+                    btnRangeMonth.backgroundTintList = toggleCsl
+                    // Text color: white when checked, secondary when not
+                    val textCsl = android.content.res.ColorStateList(
+                        arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                        intArrayOf(android.graphics.Color.WHITE, android.graphics.Color.GRAY)
+                    )
+                    btnRangeWeek.setTextColor(textCsl)
+                    btnRangeMonth.setTextColor(textCsl)
+
+                } catch (e: Exception) {}
+            }
+
             viewModel.recentTransactions.observe(viewLifecycleOwner) { transactions ->
                 recentAdapter.submitList(transactions)
             }
@@ -132,8 +170,20 @@ class DashboardFragment : Fragment() {
         rvUpcomingActions.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         rvUpcomingActions.adapter = upcomingAdapter
 
+        val tvOverdueBadge: TextView = view.findViewById(R.id.tvOverdueBadge)
+
         viewModel.pendingPlans.observe(viewLifecycleOwner) { plans ->
             upcomingAdapter.submitList(plans.take(3)) // Show top 3 on dashboard
+            
+            // Overdue badge calculation
+            val now = System.currentTimeMillis()
+            val overdueCount = plans.count { it.due_date != null && it.due_date < now && it.status == "PENDING" }
+            if (overdueCount > 0) {
+                tvOverdueBadge.text = overdueCount.toString()
+                tvOverdueBadge.visibility = View.VISIBLE
+            } else {
+                tvOverdueBadge.visibility = View.GONE
+            }
         }
 
         btnAddAction.setOnClickListener {
@@ -158,29 +208,82 @@ class DashboardFragment : Fragment() {
             }
         }
         
-        // Donut Chart & Category Breakdown
+        // Donut Chart & Category Breakdown (REVERTED to Expense Only)
         val donutChart = view.findViewById<com.example.expensemanagementapp.ui.custom.DonutChartView>(R.id.donutChart)
         val rvLegend: androidx.recyclerview.widget.RecyclerView = view.findViewById(R.id.rvCategoryLegend)
-
-        donutChart.setOnCategoryClickListener { category ->
-             category.category?.let { catName ->
-                 val bundle = android.os.Bundle().apply {
-                     putString("category_filter", catName)
-                     putString("period_filter", viewModel.selectedRange.value)
-                 }
-                 findNavController().navigate(R.id.navigation_history, bundle)
-             }
-        }
 
         legendAdapter = CategoryLegendAdapter()
         rvLegend.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         rvLegend.adapter = legendAdapter
+
+        donutChart.resetColors()
+        donutChart.setOnCategoryClickListener { category ->
+            category.category?.let { catName ->
+                val bundle = android.os.Bundle().apply {
+                    putString("category_filter", catName)
+                    putString("period_filter", viewModel.selectedRange.value)
+                }
+                findNavController().navigate(R.id.navigation_history, bundle)
+            }
+        }
 
         viewModel.categoryBreakdown.observe(viewLifecycleOwner) { data ->
             if (data != null) {
                 donutChart.setData(data)
                 legendAdapter.setData(data)
             }
+        }
+
+        // Trend Analytics Card Logic
+        val trendChart = view.findViewById<com.example.expensemanagementapp.ui.custom.SparklineView>(R.id.trendChart)
+        val toggleGroupTrend = view.findViewById<MaterialButtonToggleGroup>(R.id.toggleGroupTrendPeriod)
+        val chipIncome = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipLegendIncome)
+        val chipExpense = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipLegendExpense)
+
+        toggleGroupTrend.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                when (checkedId) {
+                    R.id.btnTrendWeek -> viewModel.setTrendRange("WEEK")
+                    R.id.btnTrendMonth -> viewModel.setTrendRange("MONTH")
+                }
+            }
+        }
+
+        // Style chips to match chart colors
+        chipIncome.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
+        chipIncome.chipStrokeColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#4CAF50"))
+        chipIncome.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+        
+        chipExpense.chipBackgroundColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
+        chipExpense.chipStrokeColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336"))
+        chipExpense.setTextColor(android.graphics.Color.parseColor("#F44336"))
+
+        val updateVisibility = {
+            trendChart.setVisibility(chipExpense.isChecked, chipIncome.isChecked)
+            
+            // Update chip styles when unchecked
+            if (chipIncome.isChecked) {
+                 chipIncome.setTextColor(android.graphics.Color.parseColor("#4CAF50"))
+                 chipIncome.chipStrokeWidth = 2f * resources.displayMetrics.density
+            } else {
+                 chipIncome.setTextColor(android.graphics.Color.GRAY)
+                 chipIncome.chipStrokeWidth = 1f * resources.displayMetrics.density
+            }
+            
+            if (chipExpense.isChecked) {
+                 chipExpense.setTextColor(android.graphics.Color.parseColor("#F44336"))
+                 chipExpense.chipStrokeWidth = 2f * resources.displayMetrics.density
+            } else {
+                 chipExpense.setTextColor(android.graphics.Color.GRAY)
+                 chipExpense.chipStrokeWidth = 1f * resources.displayMetrics.density
+            }
+        }
+
+        chipIncome.setOnCheckedChangeListener { _, _ -> updateVisibility() }
+        chipExpense.setOnCheckedChangeListener { _, _ -> updateVisibility() }
+
+        viewModel.trendData.observe(viewLifecycleOwner) { triple ->
+            trendChart.setData(triple.first, triple.second, triple.third) // Expense, Income, Dates
         }
     }
     

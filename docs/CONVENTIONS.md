@@ -1,4 +1,4 @@
-# Mulya — Data & API Conventions (v0.1, DRAFT)
+# Mulya — Data & API Conventions (v0.1 — accepted 14 October 2026)
 
 Task: **MLY-007**. Status: draft, becomes binding once you commit it.
 Every rule below exists to prevent a specific defect found in the v2.26 Android code
@@ -9,16 +9,17 @@ change it **here first**, then change the code — never the other way round.
 
 ## 1. Money  *(prevents CR-01)*
 
+> **Decision (14 Oct 2026):** Amounts stored in **major units** (₹450.00, not 45000 paise). Multi-currency supported from launch. Alternative rejected: minor-unit integers (Splitwise-style paise) — rejected because the display layer matches storage, reducing conversion bugs.
+
 | Rule | Detail |
 |---|---|
-| **Integer minor units** | Every amount is an integer count of the currency's smallest unit. INR: `45000` = ₹450.00 (paise). |
-| **No floats, ever** | Not in PostgreSQL (`bigint`, never `double precision`/`real`), not in Python (`int`, never `float`), not in TypeScript (`number` holding an integer, never a decimal), not in JSON. |
-| **Currency lives on the account** | `accounts.currency_code` (ISO 4217, upper-case, `INR`). A transaction has no currency of its own; it inherits its account's. This makes a currency mismatch impossible. |
-| **Amounts are positive** | `amount_minor > 0` always. Direction comes from `kind` (`income`, `expense`, `transfer_in`, `transfer_out`). Balances sum the generated `signed_amount_minor`. |
-| **Upper bound** | `amount_minor <= 10_000_000_000_000` (₹100 billion). Keeps every value and every realistic sum below JavaScript's safe-integer limit (2⁵³−1), so JSON numbers never lose precision. |
-| **Exponent by currency** | INR/USD/EUR use 2 decimal places; JPY uses 0; some currencies use 3. One shared lookup table in code (`currency_exponent`) drives parsing and formatting. Launch scope is INR only, but nothing else may hard-code `100`. |
-| **Formatting is a client concern** | The API returns integers. One formatter per client turns `(amount_minor, currency_code, locale)` into text (`₹1,23,456.00` for `en-IN`). No `₹` literals scattered through screens (CR-12). |
-| **Division rule** | Splitting, percentages and FX round in **integer arithmetic**, half-up, and put the leftover paise on the last item so parts always sum to the whole. |
+| **Major units, decimal-safe storage** | Every amount is stored as a decimal number in the currency's major unit. INR: `450.00` = ₹450.00. PostgreSQL type: `NUMERIC(20, 8)` — never `float`, `real`, or `double precision`. |
+| **No native floats, ever** | Not in Python (`Decimal`, never `float`), not in TypeScript (`string`-parsed `Decimal` library, never a JS `number` for arithmetic), not in JSON (send as string `"450.00"` to avoid JS float loss). |
+| **Multi-currency from launch** | Each account carries its own `currency_code` (ISO 4217, upper-case: `INR`, `USD`, `EUR`). A transaction inherits its account's currency. Cross-currency transfers carry an `fx_rate` on the `transfers` row. |
+| **Amounts are positive** | `amount > 0` always. Direction comes from `kind` (`income`, `expense`, `transfer_in`, `transfer_out`). Signed amount is computed as needed. |
+| **Upper bound** | `amount <= 100_000_000_000.00` (100 billion major units). |
+| **Formatting is a client concern** | The API returns decimal strings. One formatter per client turns `(amount_string, currency_code, locale)` into display text (`₹1,23,456.00` for `en-IN`). No `₹` literals scattered through screens (CR-12). |
+| **Division rule** | Splitting and percentages round half-up using decimal arithmetic; the remainder goes on the last item so parts always sum to the whole. |
 
 ## 2. Identifiers  *(prevents CR-09)*
 
@@ -60,7 +61,7 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 5. **Transfers are two transactions** (`transfer_out` on the source account, `transfer_in` on the destination) joined by a `transfers` row. Both are written in **one database transaction**. Invariant (tested): for same-currency transfers the two legs sum to zero.
 6. **Savings goals never book expenses.** A goal contribution is a transfer into the goal's envelope; deleting a goal must return the money or ask. (Design lands with MLY-027.)
 7. **Credit cards** use the same sign rule: spending pushes the balance negative (amount owed). Statement cycles and interest are out of scope for v1.
-8. **Overspending policy is per account** (a future `allow_negative` flag), not a global toggle that some screens ignore (CR-14).
+8. **Overspending is always blocked.** No account may go below zero (or below negative `credit_limit` for credit cards). The database enforces this via a trigger / deferred constraint; the API returns `422 Unprocessable` with a clear message. There is no per-account override flag — a uniform rule avoids the CR-14 inconsistency where the global toggle and per-screen logic contradicted each other.
 9. **Every mutation that touches more than one row runs in one database transaction** and has a test (CR-04, CR-05).
 10. Categories are referenced by **id**, are typed (`income`/`expense`), and belong to one workspace (CR-08). Cross-workspace references are rejected by composite foreign keys.
 

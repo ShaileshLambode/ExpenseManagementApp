@@ -1,6 +1,6 @@
-# Mulya — Target Architecture (v0.1 DRAFT)
+# Mulya — Target Architecture (v0.1 — accepted 16 October 2026)
 
-Task: **MLY-005**. Status: draft for your review. Accepted decisions are recorded in workbook sheet `20_Decisions`.
+Task: **MLY-005**. Status: v0.1 accepted on 16 Oct 2026. Accepted decisions are recorded in workbook sheet `20_Decisions`.
 Binding companion: `docs/CONVENTIONS.md` (v0.2). Where this document and CONVENTIONS disagree, CONVENTIONS wins.
 
 ---
@@ -158,9 +158,9 @@ The worker is **the same codebase in a separate process** (`python -m app.worker
 
 ## 12. New decisions raised on Day 2
 
-- **ADR-B1 — Synchronous database access.** SQLAlchemy 2 + psycopg 3, synchronous; FastAPI runs sync endpoints in a threadpool.
-  Why: one driver for the app and Alembic; the endpoints are I/O-light; and psycopg's async mode is known not to run on Windows' default event loop (verify before relying on this), which would complicate your dev setup. Revisit if profiling shows threadpool saturation.
-- **ADR-M1 — Local money storage.** See §5. Recommended: option A, confirmed by a spike.
-- **ADR-R1 — Repo layout.** See §3. Recommended: move legacy into `legacy-android/` in one commit before `apps/mobile` starts.
-- **ADR-S1 — Offline overdraft conflicts (decide in the MLY-010 sync spike).** Options: (a) the client enforces the same floor locally, and a write the server later rejects is kept and flagged "needs attention" for the user to fix (recommended: nothing is lost, the rule stays strict); (b) the server accepts offline-origin writes even if they overdraw (simple, but contradicts CONVENTIONS §5.8). Recommendation: (a).
-- **ADR-L1 — Ledger edits.** Editable + soft-delete + `version` today; audit log later; **no immutability** (CONVENTIONS open question). Your decision.
+- **ADR-B1 — Synchronous database access.** **[ACCEPTED]** SQLAlchemy 2 + psycopg 3, synchronous; FastAPI runs sync endpoints in a threadpool.
+  Why: one driver for the app and Alembic; the endpoints are I/O-light; avoids psycopg async event loop quirks on Windows. Revisit if profiling shows threadpool saturation.
+- **ADR-M1 — Local money storage.** **[ACCEPTED - Option A]** See §5. Recommended: Option A (TEXT decimal strings + client-side decimal arithmetic via Money module), confirmed by a 30–60 min spike in MLY-013.
+- **ADR-R1 — Repo layout.** **[ACCEPTED]** See §3. Recommended: move legacy Android files into `legacy-android/` in one git commit before `apps/mobile` starts.
+- **ADR-S1 — Offline overdraft conflicts.** **[ACKNOWLEDGED - Option A]** Decide formally in MLY-010 sync spike. Client enforces the floor locally; writes rejected by the server are flagged "needs attention" for the user to resolve, never silently dropped.
+- **ADR-L1 — Ledger edits.** **[ACCEPTED]** Editable + soft-delete + `version` bumping; audit log of previous values added later; **no rigid immutability**.

@@ -1,6 +1,6 @@
-# Mulya — Test Matrix (v0.1 DRAFT)
+# Mulya — Test Matrix (v0.1 — accepted 16 October 2026)
 
-Task: **MLY-006**. Status: draft for your review.
+Task: **MLY-006**. Status: v0.1 accepted on 16 Oct 2026.
 Companion documents: `CONVENTIONS.md` (the rules being tested) and `ARCHITECTURE.md` §6 (where each rule is enforced).
 
 ## Principles

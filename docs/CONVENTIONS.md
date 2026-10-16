@@ -1,6 +1,7 @@
-# Mulya — Data & API Conventions (v0.1 — accepted 14 October 2026)
+# Mulya — Data & API Conventions (v0.2 — errata over v0.1, accepted 14 October 2026)
 
-Task: **MLY-007**. Status: draft, becomes binding once you commit it.
+Task: **MLY-007**. Status: v0.1 was accepted on 14 Oct 2026. **v0.2 fixes drift** between this document and
+`schema_v0.sql` / the Day 1 decisions (see "Changes in v0.2" at the end) and becomes binding when you commit it.
 Every rule below exists to prevent a specific defect found in the v2.26 Android code
 (finding IDs `CR-xx` refer to sheet `25_Codebase_Review`). If a rule is wrong for the product,
 change it **here first**, then change the code — never the other way round.
@@ -18,6 +19,9 @@ change it **here first**, then change the code — never the other way round.
 | **Multi-currency from launch** | Each account carries its own `currency_code` (ISO 4217, upper-case: `INR`, `USD`, `EUR`). A transaction inherits its account's currency. Cross-currency transfers carry an `fx_rate` on the `transfers` row. |
 | **Amounts are positive** | `amount > 0` always. Direction comes from `kind` (`income`, `expense`, `transfer_in`, `transfer_out`). Signed amount is computed as needed. |
 | **Upper bound** | `amount <= 100_000_000_000.00` (100 billion major units). |
+| **Decimals per currency** *(v0.2)* | The column allows 8 decimals (headroom for FX results), but a currency's own amounts never carry more than its exponent: INR/USD/EUR 2, JPY 0, KWD 3. **The API rejects extra digits** (it does not round). Schema v0 alone would store `450.123456789` rupees — verified. |
+| **Wire format** *(v0.2)* | JSON number → rejected; decimal string → accepted (`app/core/money.py`). Always return money through a response model: FastAPI's raw-dict encoder turns `Decimal` into a float. |
+| **Local (mobile) storage** *(v0.2)* | SQLite has no exact decimal type, and `SUM()` over text/real values is floating point. Store money as TEXT decimal strings, do all arithmetic in one `Money` module on a decimal library, and **never use SQL aggregates on money in SQLite**. (ADR-M1 in ARCHITECTURE.md; confirmed by a spike before mobile work starts.) |
 | **Formatting is a client concern** | The API returns decimal strings. One formatter per client turns `(amount_string, currency_code, locale)` into display text (`₹1,23,456.00` for `en-IN`). No `₹` literals scattered through screens (CR-12). |
 | **Division rule** | Splitting and percentages round half-up using decimal arithmetic; the remainder goes on the last item so parts always sum to the whole. |
 
@@ -54,14 +58,21 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 ## 5. Ledger rules  *(prevents CR-02, CR-03, CR-07)*
 
 1. **Balances are derived, never stored, never synced.**
-   `balance = opening_balance_minor + SUM(signed_amount_minor)` over the account's non-deleted transactions (view `v_account_balances`).
+   `balance = opening_balance + SUM(signed_amount)` over the account's non-deleted transactions (view `v_account_balances`).
 2. **No `balance_after` column.** Running balances are computed on read (window function) when a screen needs them.
 3. **No silent balance edits.** "Adjust balance" creates a real transaction with `source = 'adjustment'`, so history always explains the balance.
 4. **Adjustments move balances but are excluded from income/expense analytics** (as are transfers). Analytics filter: `kind IN ('income','expense') AND source <> 'adjustment' AND deleted_at IS NULL`.
 5. **Transfers are two transactions** (`transfer_out` on the source account, `transfer_in` on the destination) joined by a `transfers` row. Both are written in **one database transaction**. Invariant (tested): for same-currency transfers the two legs sum to zero.
 6. **Savings goals never book expenses.** A goal contribution is a transfer into the goal's envelope; deleting a goal must return the money or ask. (Design lands with MLY-027.)
 7. **Credit cards** use the same sign rule: spending pushes the balance negative (amount owed). Statement cycles and interest are out of scope for v1.
-8. **Overspending is always blocked.** No account may go below zero (or below negative `credit_limit` for credit cards). The database enforces this via a trigger / deferred constraint; the API returns `422 Unprocessable` with a clear message. There is no per-account override flag — a uniform rule avoids the CR-14 inconsistency where the global toggle and per-screen logic contradicted each other.
+8. **Overspending is always blocked** *(enforced since migration 0002, schema v0.1)*. No account may fall below its floor:
+   `0` for every type except `credit_card`, whose floor is `-credit_limit`. There is no per-account override flag (CR-14).
+   - Enforced **by the database**: triggers run on INSERT, UPDATE and DELETE of `transactions` (so soft-deleting or moving an income that funds later spending is rejected too) and on changes to an account's `opening_balance`, `credit_limit` or `type`.
+   - Each check first locks the account row (`FOR NO KEY UPDATE`), so two simultaneous expenses cannot both pass.
+   - Account rules: bank/cash/wallet/other need `opening_balance >= 0`; a credit card **must** have a `credit_limit` and `opening_balance >= -credit_limit`.
+   - Violation = SQLSTATE `P0001` with constraint name `account_no_overdraft`; the API maps that to **422** with a clear message. Never match on message text.
+   - Known limit (accepted): the guard checks the balance *now*, not the running balance on each past date, so a back-dated expense is allowed if today's balance stays above the floor.
+   - Concurrency rule for the API: write transfer legs in `account_id` order and retry once on SQLSTATE `40P01` (deadlock).
 9. **Every mutation that touches more than one row runs in one database transaction** and has a test (CR-04, CR-05).
 10. Categories are referenced by **id**, are typed (`income`/`expense`), and belong to one workspace (CR-08). Cross-workspace references are rejected by composite foreign keys.
 
@@ -78,7 +89,7 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 ## 7. Naming
 
 - Tables: plural `snake_case` (`transactions`). Columns: `snake_case`.
-- Suffixes: `_minor` = integer money · `_on` = `date` · `_at` = `timestamptz` · `_id` = uuid FK.
+- Suffixes: `_on` = `date` · `_at` = `timestamptz` · `_id` = uuid FK. Money columns carry **no** suffix (they are `NUMERIC` major units: `amount`, `opening_balance`, `credit_limit`).
 - Enumerations are `text` + `CHECK (... IN (...))`, **not** PostgreSQL `ENUM` types (adding a value is a one-line constraint change, not a type migration).
 - Constraints and indexes are named explicitly when they matter (`accounts_ws_id_uq`).
 - API JSON uses the same `snake_case` names; the generated TypeScript client is the only translation layer.
@@ -99,9 +110,24 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 | 3 | Enums as `text + CHECK` | PostgreSQL `ENUM` types |
 | 4 | `date` + optional `timestamptz` | One `timestamptz` and derive the day from device offset |
 | 5 | No stored `next_run` on recurring rules | Stored next-run column (drifts, can't catch up safely) |
+| 6 | Money in major units, `NUMERIC(20,8)`, decimal strings on the wire *(Day 1, owner decision)* | Integer minor units (paise) — rejected so storage matches display |
+| 7 | Multi-currency from launch (`accounts.currency_code`, `transfers.fx_rate`) *(Day 1)* | INR-only launch |
+| 8 | Overspending always blocked, database-enforced *(Day 1; hardened in v0.1)* | Per-account allow-negative flag |
 
 ## Open questions (answer when the feature is designed, not now)
 
-- Cross-currency transfers: one `fx_rate` on the `transfers` row, each leg in its own account currency?
+- **Ledger edits.** Schema v0.1 lets transactions be edited (every edit bumps `version`) and soft-deleted; nothing makes them immutable. Recommendation: keep editing (users expect it; the old app allowed it) and add an audit log of old values later. If you want a strictly immutable ledger, say so: it removes PATCH on amount/account and changes the API.
+- **Cross-currency transfers are not enforced yet.** `fx_rate` exists but nothing requires it when account currencies differ, or checks the two legs against it (verified: INR→USD 1,000 → 1,000,000 with `fx_rate` NULL is accepted). Planned as a database constraint under MLY-009; until then the API must reject it.
 - Do goals need their own table of envelopes or can an envelope be an account with `type = 'goal'`?
 - Attachments (receipts): object storage keys on `transactions`, or a separate `attachments` table?
+
+---
+
+## Changes in v0.2 (errata — review these)
+
+1. §1: added *Decimals per currency*, *Wire format*, *Local (mobile) storage* (consequences of the major-unit decision).
+2. §5.1: formula now uses the real column names (`opening_balance`, `signed_amount`).
+3. §5.8: rewritten to match what the database enforces after migration 0002 (the v0 trigger could be bypassed by deleting or moving an income, by lowering an opening balance, and by two concurrent writes).
+4. §7: removed the `_minor` suffix rule (obsolete after the major-unit decision).
+5. Decisions table: recorded the three Day 1 decisions that were missing.
+6. Open questions: resolved the fx question into a concrete gap; added the ledger-immutability question (the Day 1 EOD says "immutable ledger"; the schema does not implement that).

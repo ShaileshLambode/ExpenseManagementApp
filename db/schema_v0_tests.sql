@@ -9,7 +9,11 @@
 -- Amounts are in MAJOR units (rupees/dollars, not paise/cents):
 --   450.00 = ₹450.00
 --
--- Expected: 23 rows PASS  +  final row "ALL PASS | 23 of 23 checks passed"
+-- Expected at schema v0.1 (after migration 0002): 33 rows PASS + final row
+--   "ALL PASS | 33 of 33 checks passed".
+-- On schema v0 (migration 0001 only) tests 24, 25, 26, 27, 29, 30 and 31 FAIL on
+-- purpose: they are the reproducible bug list that migration 0002 fixes.
+-- Tests 28, 32 and 33 already pass on v0 (they pin behaviour that was correct).
 -- =====================================================================
 
 DO $$
@@ -39,18 +43,42 @@ END $$;
 CREATE OR REPLACE FUNCTION pg_temp.expect_err(
   p_name text, p_sql text, p_state text)
 RETURNS void LANGUAGE plpgsql AS $$
+DECLARE v_noerr boolean := false;
 BEGIN
   BEGIN
     EXECUTE p_sql;
-    INSERT INTO t_results (name, ok, detail)
-      VALUES (p_name, false, 'no error was raised');
+    v_noerr := true;
+    -- Statement unexpectedly succeeded: raise a sentinel so its side effects are rolled back.
+    RAISE EXCEPTION 'rollback-sentinel' USING ERRCODE = 'XX999';
   EXCEPTION WHEN OTHERS THEN
-    IF SQLSTATE = p_state THEN
+    IF v_noerr THEN
+      INSERT INTO t_results (name, ok, detail)
+        VALUES (p_name, false, 'no error was raised');
+    ELSIF SQLSTATE = p_state THEN
       INSERT INTO t_results (name, ok, detail)
         VALUES (p_name, true, 'rejected as expected (' || SQLSTATE || ')');
     ELSE
       INSERT INTO t_results (name, ok, detail)
         VALUES (p_name, false, 'wrong error ' || SQLSTATE || ': ' || SQLERRM);
+    END IF;
+  END;
+END $$;
+
+-- expect_ok: the statement must SUCCEED; its side effects are always rolled back.
+CREATE OR REPLACE FUNCTION pg_temp.expect_ok(p_name text, p_sql text)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE v_done boolean := false;
+BEGIN
+  BEGIN
+    EXECUTE p_sql;
+    v_done := true;
+    RAISE EXCEPTION 'rollback-sentinel' USING ERRCODE = 'XX999';
+  EXCEPTION WHEN OTHERS THEN
+    IF v_done THEN
+      INSERT INTO t_results (name, ok, detail) VALUES (p_name, true, 'accepted as expected');
+    ELSE
+      INSERT INTO t_results (name, ok, detail)
+        VALUES (p_name, false, 'unexpected error ' || SQLSTATE || ': ' || SQLERRM);
     END IF;
   END;
 END $$;
@@ -332,6 +360,97 @@ SELECT pg_temp.expect_err('reject: writing the generated column',
   $q$UPDATE transactions SET signed_amount = 1
      WHERE id = '00000000-0000-7000-8000-0000000000f1'$q$,
   '428C9');   -- generated_always
+
+-- ---------------------------------------------------------------------
+-- 9. Overdraft guard hardening (v0.1)  -- tests 24-33
+--    Each scenario runs inside expect_err / expect_ok, which roll back
+--    everything the scenario did, so the fixtures above stay untouched.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pg_temp.mk_account(
+  p_name text, p_type text, p_opening numeric, p_limit numeric DEFAULT NULL)
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN
+  INSERT INTO accounts (id, workspace_id, name, type, currency_code, opening_balance, credit_limit)
+  VALUES (v_id, '00000000-0000-7000-8000-0000000000b1', p_name, p_type, 'INR', p_opening, p_limit);
+  RETURN v_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.mk_tx(p_account uuid, p_kind text, p_amount numeric)
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN
+  INSERT INTO transactions (id, workspace_id, account_id, kind, amount, occurred_on)
+  VALUES (v_id, '00000000-0000-7000-8000-0000000000b1', p_account, p_kind, p_amount, '2026-10-14');
+  RETURN v_id;
+END $$;
+
+-- X starts at 0, receives 1000 income, spends 800. The income funds the spending.
+CREATE OR REPLACE FUNCTION pg_temp.sc_soft_delete_funding_income() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account('X', 'bank', 0); inc uuid;
+BEGIN
+  inc := pg_temp.mk_tx(x, 'income', 1000);
+  PERFORM pg_temp.mk_tx(x, 'expense', 800);
+  UPDATE transactions SET deleted_at = now() WHERE id = inc;      -- balance would become -800
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc_hard_delete_funding_income() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account('X', 'bank', 0); inc uuid;
+BEGIN
+  inc := pg_temp.mk_tx(x, 'income', 1000);
+  PERFORM pg_temp.mk_tx(x, 'expense', 800);
+  DELETE FROM transactions WHERE id = inc;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc_move_funding_income() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account('X', 'bank', 0); y uuid := pg_temp.mk_account('Y', 'bank', 0); inc uuid;
+BEGIN
+  inc := pg_temp.mk_tx(x, 'income', 1000);
+  PERFORM pg_temp.mk_tx(x, 'expense', 800);
+  UPDATE transactions SET account_id = y WHERE id = inc;          -- X would be -800
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc_lower_opening_balance() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account('X', 'bank', 1000);
+BEGIN
+  PERFORM pg_temp.mk_tx(x, 'expense', 800);
+  UPDATE accounts SET opening_balance = 500 WHERE id = x;         -- 500 - 800 = -300
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc_restore_overdrawing_expense() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account('X', 'bank', 1000); e1 uuid;
+BEGIN
+  e1 := pg_temp.mk_tx(x, 'expense', 800);
+  UPDATE transactions SET deleted_at = now() WHERE id = e1;       -- legitimately deleted
+  PERFORM pg_temp.mk_tx(x, 'expense', 900);                       -- balance now 100
+  UPDATE transactions SET deleted_at = NULL WHERE id = e1;        -- restoring 800 -> -700
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc_card_up_to_limit_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE c uuid := pg_temp.mk_account('Card', 'credit_card', 0, 10000);
+BEGIN
+  PERFORM pg_temp.mk_tx(c, 'expense', 10000);                     -- exactly at the limit: allowed
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc_card_over_limit() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE c uuid := pg_temp.mk_account('Card', 'credit_card', 0, 10000);
+BEGIN
+  PERFORM pg_temp.mk_tx(c, 'expense', 10000.01);                  -- one paisa over
+END $$;
+
+SELECT pg_temp.expect_err('guard: soft-deleting an income that funds spending',   'SELECT pg_temp.sc_soft_delete_funding_income()', 'P0001');
+SELECT pg_temp.expect_err('guard: hard-deleting an income that funds spending',   'SELECT pg_temp.sc_hard_delete_funding_income()', 'P0001');
+SELECT pg_temp.expect_err('guard: moving a funding income to another account',    'SELECT pg_temp.sc_move_funding_income()',        'P0001');
+SELECT pg_temp.expect_err('guard: lowering opening_balance below spending',       'SELECT pg_temp.sc_lower_opening_balance()',      'P0001');
+SELECT pg_temp.expect_err('guard: restoring a deleted expense that overdraws',    'SELECT pg_temp.sc_restore_overdrawing_expense()','P0001');
+SELECT pg_temp.expect_err('guard: bank account with negative opening balance',
+  $q$SELECT pg_temp.mk_account('Neg', 'bank', -1)$q$, '23514');
+SELECT pg_temp.expect_err('guard: credit card without a credit limit',
+  $q$SELECT pg_temp.mk_account('NoLimit', 'credit_card', 0)$q$, '23514');
+SELECT pg_temp.expect_err('guard: credit card opening balance beyond its limit',
+  $q$SELECT pg_temp.mk_account('Deep', 'credit_card', -2000, 1000)$q$, '23514');
+SELECT pg_temp.expect_ok ('guard: credit card may spend exactly up to its limit', 'SELECT pg_temp.sc_card_up_to_limit_ok()');
+SELECT pg_temp.expect_err('guard: credit card cannot exceed its limit',           'SELECT pg_temp.sc_card_over_limit()',            'P0001');
 
 -- ---------------------------------------------------------------------
 -- RESULT

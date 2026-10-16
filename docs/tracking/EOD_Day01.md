@@ -64,12 +64,12 @@ During Block D and Block E, the following architectural decisions were solidifie
 
 3. **Strict Non-Overdraft Trigger:**
    - User decision: Strict guard preventing any account from dropping below its effective credit limit / zero balance.
-   - Implemented via `check_no_overdraft()` `AFTER INSERT OR UPDATE` trigger on `account_balances`.
+   - Implemented via `check_no_overdraft()` `AFTER INSERT OR UPDATE` trigger on `transactions` (balances are the derived view `v_account_balances`).
    - Dedicated Test 23 verified that overdraft transactions are rejected with SQLSTATE `P0001`.
 
 4. **Audit Trail & Soft Deletion:**
-   - 30-day recycle bin policy with `deleted_at TIMESTAMPTZ` and `purged_at TIMESTAMPTZ`.
-   - Immutability on ledger entries; balance adjustments require explicit compensating transaction records.
+   - 30-day recycle bin policy with `deleted_at TIMESTAMPTZ` (no `purged_at` column yet).
+   - Balance adjustments are explicit transactions (`source='adjustment'`). Ledger rows are editable and soft-deletable; immutability is **not** implemented.
 
 ---
 

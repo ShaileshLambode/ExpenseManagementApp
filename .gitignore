@@ -15,3 +15,18 @@
 local.properties
 Temp/
 db/*.csv
+
+# --- Mulya rebuild (Day 2) ---------------------------------------------
+# Secrets: add these BEFORE creating backend/.env  (this repo is public)
+.env
+.env.*
+!.env.example
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+# Node (later)
+node_modules/

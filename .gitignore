@@ -30,3 +30,9 @@ __pycache__/
 *.egg-info/
 # Node (later)
 node_modules/
+
+# --- Mulya Day 3 ---------------------------------------------------------
+# Raw (unsanitized) backups must never be committed. Fixtures are the *_sanitized / synthetic ones.
+mulya_backup_*.json
+*.backup.json
+backend/tests/fixtures/legacy/private/

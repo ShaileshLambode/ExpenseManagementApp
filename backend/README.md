@@ -21,7 +21,11 @@ pytest                                 # wipes + migrates mulya_test, runs every
 | `app/db/session.py` | engine + one transaction per request |
 | `app/api/health.py` | `/health/live`, `/health/ready` (ready also checks the migration revision) |
 | `app/api/v1/` | versioned API routers |
-| `alembic/versions/` | migrations 0001 (Day 1 schema, frozen) and 0002 (overdraft hardening) |
+| `app/legacy/mapper.py` | pure mapper: legacy Mulya backup → rows for the new schema (+ reconciliation) |
+| `alembic/versions/` | 0001 Day 1 schema (frozen) · 0002 overdraft hardening · 0003 currencies + transfer integrity · 0004 auth tables |
+| `scripts/legacy_report.py` | read-only: shows what a legacy backup would become (counts, reconciliation, issues) |
+| `scripts/sanitize_legacy_backup.py` | strips personal data from a legacy backup so it can become a fixture |
+| `tests/golden/`, `tests/fixtures/legacy/` | golden tests and the legacy-backup fixtures |
 | `tests/` | pytest suite (see `docs/TEST_MATRIX.md`) |
 
 Rules: see `docs/CONVENTIONS.md` and `docs/ARCHITECTURE.md`.

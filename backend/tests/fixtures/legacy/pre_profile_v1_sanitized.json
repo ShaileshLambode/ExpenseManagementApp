@@ -1,0 +1,127 @@
+{
+  "app": "Mulya",
+  "balances": [
+    {
+      "amount": 525.0,
+      "budget_profile_id": 6,
+      "id": 11,
+      "last_updated": 1777130495595,
+      "type": "BANK"
+    },
+    {
+      "amount": 0.0,
+      "budget_profile_id": 6,
+      "id": 12,
+      "last_updated": 1777130311677,
+      "type": "CASH"
+    }
+  ],
+  "categories": [
+    {
+      "icon": "ic_food",
+      "id": 1,
+      "name": "Food"
+    },
+    {
+      "icon": "ic_transport",
+      "id": 2,
+      "name": "Transport"
+    },
+    {
+      "icon": "ic_shopping",
+      "id": 3,
+      "name": "Shopping"
+    },
+    {
+      "icon": "ic_bills",
+      "id": 4,
+      "name": "Bills"
+    },
+    {
+      "icon": "ic_entertainment",
+      "id": 5,
+      "name": "Family"
+    },
+    {
+      "icon": "ic_health",
+      "id": 6,
+      "name": "Health"
+    },
+    {
+      "icon": "ic_other",
+      "id": 7,
+      "name": "Other"
+    },
+    {
+      "icon": "ic_other",
+      "id": 8,
+      "name": "Gadgets "
+    },
+    {
+      "icon": "ic_other",
+      "id": 9,
+      "name": "Lend"
+    }
+  ],
+  "pendingPlans": [],
+  "preferences": {
+    "ALLOW_NEGATIVE_BALANCE": true,
+    "CURRENCY_SYMBOL": "₹",
+    "LOW_BALANCE_THRESHOLD": 1000.0,
+    "AUTO_BACKUP": false,
+    "ACTIVE_PROFILE_ID": 6,
+    "IS_FIRST_LAUNCH": false,
+    "THEME_MODE": 2,
+    "NOTIF_BUDGET_WARNING": true
+  },
+  "timestamp": 1777212225481,
+  "transactions": [
+    {
+      "amount": 240.0,
+      "balance_after": 525.0,
+      "budget_profile_id": 6,
+      "category": "Bills",
+      "id": 18,
+      "mode": "BANK",
+      "timestamp": 1776784880938,
+      "title": "Bills #18",
+      "transaction_type": "EXPENSE"
+    },
+    {
+      "amount": 80.0,
+      "balance_after": 525.0,
+      "budget_profile_id": 6,
+      "category": "Food",
+      "id": 19,
+      "mode": "BANK",
+      "timestamp": 1776871288288,
+      "title": "Food #19",
+      "transaction_type": "EXPENSE"
+    },
+    {
+      "amount": 100.0,
+      "balance_after": 525.0,
+      "budget_profile_id": 6,
+      "category": "Food",
+      "id": 20,
+      "mode": "BANK",
+      "timestamp": 1777044094943,
+      "title": "Food #20",
+      "transaction_type": "EXPENSE"
+    },
+    {
+      "amount": 55.0,
+      "balance_after": 525.0,
+      "budget_profile_id": 6,
+      "category": "Gadgets ",
+      "id": 21,
+      "mode": "BANK",
+      "timestamp": 1776698474744,
+      "title": "Gadgets #21",
+      "transaction_type": "EXPENSE"
+    }
+  ],
+  "version": 1,
+  "profile": null,
+  "profileImageBase64": null
+}

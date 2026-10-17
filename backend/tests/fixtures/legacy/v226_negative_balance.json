@@ -1,0 +1,70 @@
+{
+  "app": "Mulya",
+  "version": 1,
+  "timestamp": 1790778600000,
+  "preferences": {
+    "ACTIVE_PROFILE_ID": 1,
+    "ALLOW_NEGATIVE_BALANCE": true,
+    "AUTO_BACKUP": false,
+    "CURRENCY_SYMBOL": "₹",
+    "IS_FIRST_LAUNCH": false,
+    "LOW_BALANCE_THRESHOLD": 500.0,
+    "NOTIF_BUDGET_WARNING": true,
+    "THEME_MODE": 1
+  },
+  "profile": {
+    "id": 1,
+    "name": "Asha Testwala",
+    "dob": "1990-01-01",
+    "gender": "F",
+    "mobile": "9000000000",
+    "city": "Testville",
+    "state": "Testland",
+    "imageUri": "content://x"
+  },
+  "profileImageBase64": "AAAA",
+  "balances": [
+    {
+      "id": 1,
+      "budget_profile_id": 1,
+      "type": "BANK",
+      "amount": -250.0,
+      "last_updated": 1790742600000
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Food",
+      "icon": "🍔"
+    }
+  ],
+  "transactions": [
+    {
+      "id": 1,
+      "budget_profile_id": 1,
+      "title": "Food #1",
+      "amount": 250.0,
+      "transaction_type": "EXPENSE",
+      "mode": "BANK",
+      "category": "Food",
+      "timestamp": 1780288200000,
+      "balance_after": 0.0
+    }
+  ],
+  "budgetProfiles": [
+    {
+      "id": 1,
+      "name": "Personal",
+      "color": "#3F51B5",
+      "icon": "💰",
+      "is_active": true,
+      "created_at": 1767241800000,
+      "is_deleted": false,
+      "deleted_at": null
+    }
+  ],
+  "pendingPlans": [],
+  "goals": [],
+  "recurringTransactions": []
+}

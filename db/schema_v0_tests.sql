@@ -9,9 +9,11 @@
 -- Amounts are in MAJOR units (rupees/dollars, not paise/cents):
 --   450.00 = ₹450.00
 --
--- Expected at schema v0.1 (after migration 0002): 33 rows PASS + final row
---   "ALL PASS | 33 of 33 checks passed".
--- On schema v0 (migration 0001 only) tests 24, 25, 26, 27, 29, 30 and 31 FAIL on
+-- Expected at head (after migration 0004): 67 rows PASS + final row
+--   "ALL PASS | 67 of 67 checks passed".
+-- Red/green by revision: tests 1-23 need 0001; 24-33 need 0002; 34-55 need 0003;
+-- 56-67 need 0004. Run `pytest --revision 0002` to see 0003's bug list fail.
+-- On schema v0 (migration 0001 only) tests 24, 25, 26, 27, 29, 30 and 31 also FAIL on
 -- purpose: they are the reproducible bug list that migration 0002 fixes.
 -- Tests 28, 32 and 33 already pass on v0 (they pin behaviour that was correct).
 -- =====================================================================
@@ -112,6 +114,8 @@ INSERT INTO categories (id, workspace_id, name, kind) VALUES
   ('00000000-0000-7000-8000-0000000000d3',
    '00000000-0000-7000-8000-0000000000b1', 'Transport', 'expense');
 
+-- A transfer and its two legs are written in ONE transaction (checked at COMMIT since migration 0003).
+BEGIN;
 INSERT INTO transfers (id, workspace_id, occurred_on) VALUES
   ('00000000-0000-7000-8000-0000000000e1',
    '00000000-0000-7000-8000-0000000000b1', '2026-09-30');
@@ -166,6 +170,7 @@ VALUES
    'income', 500.00,
    NULL, NULL,
    'Cash count fix', '2026-09-30', 'adjustment');
+COMMIT;
 
 -- ---------------------------------------------------------------------
 -- 1. Derived balances
@@ -451,6 +456,261 @@ SELECT pg_temp.expect_err('guard: credit card opening balance beyond its limit',
   $q$SELECT pg_temp.mk_account('Deep', 'credit_card', -2000, 1000)$q$, '23514');
 SELECT pg_temp.expect_ok ('guard: credit card may spend exactly up to its limit', 'SELECT pg_temp.sc_card_up_to_limit_ok()');
 SELECT pg_temp.expect_err('guard: credit card cannot exceed its limit',           'SELECT pg_temp.sc_card_over_limit()',            'P0001');
+
+-- ---------------------------------------------------------------------
+-- 10. Currency catalogue, decimals per currency, transfer integrity (v0.2)
+--     tests 34-55.  Scenarios roll back everything they do.
+--     Deferred transfer checks are forced with SET CONSTRAINTS ALL IMMEDIATE.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pg_temp.mk_account_c(p_name text, p_ccy char(3), p_opening numeric)
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN
+  INSERT INTO accounts (id, workspace_id, name, type, currency_code, opening_balance)
+  VALUES (v_id, '00000000-0000-7000-8000-0000000000b1', p_name, 'bank', p_ccy, p_opening);
+  RETURN v_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.mk_transfer(
+  p_from uuid, p_to uuid, p_out numeric, p_in numeric, p_fx numeric DEFAULT NULL)
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN
+  INSERT INTO transfers (id, workspace_id, occurred_on, fx_rate)
+  VALUES (v_id, '00000000-0000-7000-8000-0000000000b1', '2026-10-16', p_fx);
+  INSERT INTO transactions (workspace_id, account_id, kind, amount, transfer_id, occurred_on) VALUES
+    ('00000000-0000-7000-8000-0000000000b1', p_from, 'transfer_out', p_out, v_id, '2026-10-16'),
+    ('00000000-0000-7000-8000-0000000000b1', p_to,   'transfer_in',  p_in,  v_id, '2026-10-16');
+  RETURN v_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_same_ccy_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, y, 100, 100); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_cross_ccy_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',10000); u uuid := pg_temp.mk_account_c('U','USD',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, u, 8300, 99.60, 0.012); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_cross_no_fx() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',10000); u uuid := pg_temp.mk_account_c('U','USD',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, u, 1000, 1000000, NULL); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_cross_wrong_amount() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',10000); u uuid := pg_temp.mk_account_c('U','USD',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, u, 1000, 1000000, 0.012); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+-- 100.00 INR x 0.012345 = 1.2345 USD; a bank that credits 1.23 is within half a cent -> accepted
+CREATE OR REPLACE FUNCTION pg_temp.sc3_cross_rounded_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); u uuid := pg_temp.mk_account_c('U','USD',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, u, 100.00, 1.23, 0.012345); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_cross_off_by_more() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); u uuid := pg_temp.mk_account_c('U','USD',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, u, 100.00, 1.22, 0.012345); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_same_unequal() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, y, 100, 90); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_same_with_fx() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0);
+BEGIN PERFORM pg_temp.mk_transfer(x, y, 100, 100, 1); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_single_leg() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); t uuid := uuidv7();
+BEGIN
+  INSERT INTO transfers (id, workspace_id, occurred_on) VALUES (t, '00000000-0000-7000-8000-0000000000b1', '2026-10-16');
+  INSERT INTO transactions (workspace_id, account_id, kind, amount, transfer_id, occurred_on)
+  VALUES ('00000000-0000-7000-8000-0000000000b1', x, 'transfer_out', 100, t, '2026-10-16');
+  SET CONSTRAINTS ALL IMMEDIATE;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_two_out() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',1000); t uuid := uuidv7();
+BEGIN
+  INSERT INTO transfers (id, workspace_id, occurred_on) VALUES (t, '00000000-0000-7000-8000-0000000000b1', '2026-10-16');
+  INSERT INTO transactions (workspace_id, account_id, kind, amount, transfer_id, occurred_on) VALUES
+    ('00000000-0000-7000-8000-0000000000b1', x, 'transfer_out', 100, t, '2026-10-16'),
+    ('00000000-0000-7000-8000-0000000000b1', y, 'transfer_out', 100, t, '2026-10-16');
+  SET CONSTRAINTS ALL IMMEDIATE;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_same_account() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000);
+BEGIN PERFORM pg_temp.mk_transfer(x, x, 100, 100); SET CONSTRAINTS ALL IMMEDIATE; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_three_legs() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0);
+        z uuid := pg_temp.mk_account_c('Z','INR',0); t uuid;
+BEGIN
+  t := pg_temp.mk_transfer(x, y, 100, 100);
+  INSERT INTO transactions (workspace_id, account_id, kind, amount, transfer_id, occurred_on)
+  VALUES ('00000000-0000-7000-8000-0000000000b1', z, 'transfer_in', 100, t, '2026-10-16');
+  SET CONSTRAINTS ALL IMMEDIATE;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_delete_one_leg() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0); t uuid;
+BEGIN
+  t := pg_temp.mk_transfer(x, y, 100, 100);
+  SET CONSTRAINTS ALL IMMEDIATE;   -- creation is valid
+  SET CONSTRAINTS ALL DEFERRED;
+  UPDATE transactions SET deleted_at = now() WHERE transfer_id = t AND kind = 'transfer_in';
+  SET CONSTRAINTS ALL IMMEDIATE;   -- one live leg left -> must fail
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_delete_both() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0); t uuid;
+BEGIN
+  t := pg_temp.mk_transfer(x, y, 100, 100);
+  SET CONSTRAINTS ALL IMMEDIATE;
+  SET CONSTRAINTS ALL DEFERRED;
+  UPDATE transactions SET deleted_at = now() WHERE transfer_id = t;
+  UPDATE transfers    SET deleted_at = now() WHERE id = t;
+  SET CONSTRAINTS ALL IMMEDIATE;   -- transfer and both legs deleted together -> valid
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_delete_transfer_only() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000); y uuid := pg_temp.mk_account_c('Y','INR',0); t uuid;
+BEGIN
+  t := pg_temp.mk_transfer(x, y, 100, 100);
+  SET CONSTRAINTS ALL IMMEDIATE;
+  SET CONSTRAINTS ALL DEFERRED;
+  UPDATE transfers SET deleted_at = now() WHERE id = t;   -- legs still live
+  SET CONSTRAINTS ALL IMMEDIATE;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_inr_three_decimals() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000);
+BEGIN PERFORM pg_temp.mk_tx(x, 'expense', 450.123); END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_jpy_decimals() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','JPY',10000);
+BEGIN PERFORM pg_temp.mk_tx(x, 'expense', 450.5); END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_kwd_three_decimals_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','KWD',100);
+BEGIN PERFORM pg_temp.mk_tx(x, 'expense', 1.234); END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_currency_locked() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000);
+BEGIN
+  PERFORM pg_temp.mk_tx(x, 'expense', 10);
+  UPDATE accounts SET currency_code = 'USD' WHERE id = x;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc3_currency_change_when_empty() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE x uuid := pg_temp.mk_account_c('X','INR',1000);
+BEGIN UPDATE accounts SET currency_code = 'USD' WHERE id = x; END $$;
+
+SELECT pg_temp.expect_ok ('transfer: same currency, equal legs',                         'SELECT pg_temp.sc3_same_ccy_ok()');
+SELECT pg_temp.expect_ok ('transfer: cross currency, legs match fx_rate',                'SELECT pg_temp.sc3_cross_ccy_ok()');
+SELECT pg_temp.expect_err('transfer: cross currency without fx_rate (INR->USD)',         'SELECT pg_temp.sc3_cross_no_fx()',          '23514');
+SELECT pg_temp.expect_err('transfer: cross currency, 1,000 INR became 1,000,000 USD',    'SELECT pg_temp.sc3_cross_wrong_amount()',   '23514');
+SELECT pg_temp.expect_ok ('transfer: received amount within half a cent of rate x out',  'SELECT pg_temp.sc3_cross_rounded_ok()');
+SELECT pg_temp.expect_err('transfer: received amount off by more than rounding',         'SELECT pg_temp.sc3_cross_off_by_more()',    '23514');
+SELECT pg_temp.expect_err('transfer: same currency, legs differ',                        'SELECT pg_temp.sc3_same_unequal()',         '23514');
+SELECT pg_temp.expect_err('transfer: same currency must not carry an fx_rate',           'SELECT pg_temp.sc3_same_with_fx()',         '23514');
+SELECT pg_temp.expect_err('transfer: only one leg',                                      'SELECT pg_temp.sc3_single_leg()',           '23514');
+SELECT pg_temp.expect_err('transfer: two transfer_out legs',                             'SELECT pg_temp.sc3_two_out()',              '23514');
+SELECT pg_temp.expect_err('transfer: both legs on the same account',                     'SELECT pg_temp.sc3_same_account()',         '23514');
+SELECT pg_temp.expect_err('transfer: three live legs',                                   'SELECT pg_temp.sc3_three_legs()',           '23514');
+SELECT pg_temp.expect_err('transfer: soft-deleting only one leg',                        'SELECT pg_temp.sc3_delete_one_leg()',       '23514');
+SELECT pg_temp.expect_ok ('transfer: soft-deleting the transfer and both legs together', 'SELECT pg_temp.sc3_delete_both()');
+SELECT pg_temp.expect_err('transfer: soft-deleting the transfer but not its legs',       'SELECT pg_temp.sc3_delete_transfer_only()', '23514');
+SELECT pg_temp.expect_err('decimals: INR amount with 3 decimals',                        'SELECT pg_temp.sc3_inr_three_decimals()',   '23514');
+SELECT pg_temp.expect_err('decimals: JPY amount with a decimal',                         'SELECT pg_temp.sc3_jpy_decimals()',         '23514');
+SELECT pg_temp.expect_ok ('decimals: KWD amount with 3 decimals',                        'SELECT pg_temp.sc3_kwd_three_decimals_ok()');
+SELECT pg_temp.expect_err('decimals: INR opening balance with 3 decimals',
+  $q$SELECT pg_temp.mk_account('Dec', 'bank', 10.005)$q$, '23514');
+SELECT pg_temp.expect_err('currency: code not in the catalogue',
+  $q$SELECT pg_temp.mk_account_c('Q', 'XXX', 0)$q$, '23503');
+SELECT pg_temp.expect_err('currency: cannot change once the account has transactions',   'SELECT pg_temp.sc3_currency_locked()',      '23514');
+SELECT pg_temp.expect_ok ('currency: can change while the account is empty',             'SELECT pg_temp.sc3_currency_change_when_empty()');
+
+-- ---------------------------------------------------------------------
+-- 11. Authentication tables (v0.3)  -- tests 56-67
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION pg_temp.mk_user(p_email text) RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN INSERT INTO users (id, email, display_name) VALUES (v_id, p_email, 'T'); RETURN v_id; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.mk_device(p_user uuid, p_platform text DEFAULT 'android')
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN INSERT INTO devices (id, user_id, platform, name) VALUES (v_id, p_user, p_platform, 'Pixel 9'); RETURN v_id; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.mk_token(p_user uuid, p_device uuid, p_hash bytea DEFAULT NULL)
+RETURNS uuid LANGUAGE plpgsql AS $$
+DECLARE v_id uuid := uuidv7();
+BEGIN
+  INSERT INTO refresh_tokens (id, user_id, device_id, session_id, token_hash, expires_at)
+  VALUES (v_id, p_user, p_device, uuidv7(),
+          COALESCE(p_hash, sha256(convert_to(gen_random_uuid()::text, 'UTF8'))),
+          now() + interval '60 days');
+  RETURN v_id;
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u uuid := pg_temp.mk_user('a@example.test'); d uuid := pg_temp.mk_device(u);
+BEGIN PERFORM pg_temp.mk_token(u, d); END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_dup_hash() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u uuid := pg_temp.mk_user('a@example.test'); d uuid := pg_temp.mk_device(u);
+        h bytea := sha256('same'::bytea);
+BEGIN PERFORM pg_temp.mk_token(u, d, h); PERFORM pg_temp.mk_token(u, d, h); END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_foreign_device() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u1 uuid := pg_temp.mk_user('a@example.test'); u2 uuid := pg_temp.mk_user('b@example.test');
+        d2 uuid := pg_temp.mk_device(u2);
+BEGIN PERFORM pg_temp.mk_token(u1, d2); END $$;   -- user 1 with user 2's device
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_revoked_without_reason() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u uuid := pg_temp.mk_user('a@example.test'); d uuid := pg_temp.mk_device(u); t uuid := pg_temp.mk_token(u, d);
+BEGIN UPDATE refresh_tokens SET revoked_at = now() WHERE id = t; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_revoked_with_reason_ok() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u uuid := pg_temp.mk_user('a@example.test'); d uuid := pg_temp.mk_device(u); t uuid := pg_temp.mk_token(u, d);
+BEGIN UPDATE refresh_tokens SET revoked_at = now(), revoked_reason = 'logout' WHERE id = t; END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_dup_identity() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u1 uuid := pg_temp.mk_user('a@example.test'); u2 uuid := pg_temp.mk_user('b@example.test');
+BEGIN
+  INSERT INTO auth_identities (user_id, provider, provider_subject) VALUES (u1, 'google', 'sub-123');
+  INSERT INTO auth_identities (user_id, provider, provider_subject) VALUES (u2, 'google', 'sub-123');
+END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_bad_hash_length() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u uuid := pg_temp.mk_user('a@example.test'); d uuid := pg_temp.mk_device(u);
+BEGIN PERFORM pg_temp.mk_token(u, d, decode('abcd', 'hex')); END $$;
+
+CREATE OR REPLACE FUNCTION pg_temp.sc4_expires_before_issue() RETURNS void LANGUAGE plpgsql AS $$
+DECLARE u uuid := pg_temp.mk_user('a@example.test'); d uuid := pg_temp.mk_device(u);
+BEGIN
+  INSERT INTO refresh_tokens (user_id, device_id, session_id, token_hash, issued_at, expires_at)
+  VALUES (u, d, uuidv7(), sha256('x'::bytea), now(), now() - interval '1 day');
+END $$;
+
+SELECT pg_temp.expect_ok ('auth: device + refresh token for the same user',   'SELECT pg_temp.sc4_ok()');
+SELECT pg_temp.expect_err('auth: duplicate refresh-token hash',               'SELECT pg_temp.sc4_dup_hash()',             '23505');
+SELECT pg_temp.expect_err('auth: refresh token on ANOTHER user''s device',    'SELECT pg_temp.sc4_foreign_device()',       '23503');
+SELECT pg_temp.expect_err('auth: revoked token without a reason',             'SELECT pg_temp.sc4_revoked_without_reason()', '23514');
+SELECT pg_temp.expect_ok ('auth: revoked token with a reason',                'SELECT pg_temp.sc4_revoked_with_reason_ok()');
+SELECT pg_temp.expect_err('auth: same Google subject linked to two users',    'SELECT pg_temp.sc4_dup_identity()',         '23505');
+SELECT pg_temp.expect_err('auth: refresh-token hash of the wrong length',      'SELECT pg_temp.sc4_bad_hash_length()',      '23514');
+SELECT pg_temp.expect_err('auth: token that expires before it was issued',    'SELECT pg_temp.sc4_expires_before_issue()', '23514');
+SELECT pg_temp.expect_err('auth: unknown device platform',
+  $q$SELECT pg_temp.mk_device(pg_temp.mk_user('a@example.test'), 'toaster')$q$, '23514');
+SELECT pg_temp.expect_err('auth: login code attempted more than its maximum',
+  $q$INSERT INTO email_login_codes (email, code_hash, expires_at, attempts, max_attempts)
+     VALUES ('a@example.test', sha256('1'::bytea), now() + interval '10 minutes', 6, 5)$q$, '23514');
+SELECT pg_temp.expect_err('auth: login-code email must be lower case',
+  $q$INSERT INTO email_login_codes (email, code_hash, expires_at)
+     VALUES ('A@Example.test', sha256('1'::bytea), now() + interval '10 minutes')$q$, '23514');
+SELECT pg_temp.expect_err('auth: login-code hash of the wrong length',
+  $q$INSERT INTO email_login_codes (email, code_hash, expires_at)
+     VALUES ('a@example.test', decode('00','hex'), now() + interval '10 minutes')$q$, '23514');
 
 -- ---------------------------------------------------------------------
 -- RESULT

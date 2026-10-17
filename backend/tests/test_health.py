@@ -1,3 +1,4 @@
+from app.api.health import expected_schema_revision
 from app.db import session
 
 
@@ -15,7 +16,7 @@ def test_ready_reports_the_schema_revision(client, request):
         assert r.json()["reason"] == "schema revision mismatch"
     else:
         assert r.status_code == 200
-        assert r.json() == {"status": "ready", "schema_revision": "0002"}
+        assert r.json() == {"status": "ready", "schema_revision": expected_schema_revision()}
 
 
 def test_ready_is_503_when_the_database_is_unreachable(client, monkeypatch):

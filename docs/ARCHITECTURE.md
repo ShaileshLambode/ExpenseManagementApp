@@ -1,7 +1,7 @@
-# Mulya — Target Architecture (v0.1 — accepted 16 October 2026)
+# Mulya — Target Architecture (v0.2 — Day 3 additions over accepted v0.1)
 
-Task: **MLY-005**. Status: v0.1 accepted on 16 Oct 2026. Accepted decisions are recorded in workbook sheet `20_Decisions`.
-Binding companion: `docs/CONVENTIONS.md` (v0.2). Where this document and CONVENTIONS disagree, CONVENTIONS wins.
+Task: **MLY-005**. Status: v0.1 accepted on 16 Oct 2026. **v0.2 expands §9 (auth design) and updates §6; becomes binding when you commit it.** Accepted decisions are recorded in workbook sheet `20_Decisions`.
+Binding companion: `docs/CONVENTIONS.md` (v0.3). Where this document and CONVENTIONS disagree, CONVENTIONS wins.
 
 ---
 
@@ -86,13 +86,13 @@ Your Day 1 decision (decimal major units) is fine in PostgreSQL, but SQLite has 
 | Invariant | Database | API | Test |
 |---|---|---|---|
 | Balance is derived | view `v_account_balances` | — | SQL suite: balances |
-| Transfer legs cancel (same currency) | *checked* in tests, **no constraint** | service writes both legs in one transaction | SQL suite: transfers |
-| Cross-currency legs agree with `fx_rate` | **GAP: nothing enforces it** | must reject until a constraint exists | none yet |
+| Transfer legs cancel (same currency) | enforced at COMMIT (0003, deferred trigger) | service writes the transfer and both legs in ONE transaction | SQL suite §10 |
+| Cross-currency legs agree with `fx_rate` | enforced at COMMIT (0003) | pass `fx_rate`; legs in account-id order | SQL suite §10 |
 | No overdraft (insert / update / delete / move / limit change) | triggers + per-account row lock | map `account_no_overdraft` → 422 | SQL suite §9 + concurrency test |
 | Analytics exclude transfers and adjustments | — (query rule) | shared query helper | SQL suite: analytics |
 | Workspace isolation | composite foreign keys | workspace comes from the token's membership | SQL suite: cross-workspace |
 | Recurring: once per date | PK `(rule_id, occurrence_on)` | catch-up generator (MLY-021) | SQL suite: recurring |
-| Currency decimals | **GAP (column allows 8)** | `validate_amount_for_currency` | `test_money` |
+| Currency decimals | trigger + `currencies` table (0003) | `validate_amount_for_currency` | SQL suite §10, `test_money`, `test_currencies` |
 | Stale write (409) | `version` bumped by trigger | compare `base_version` | trigger tested; API to write |
 | Idempotent create | PK = client UUID | `ON CONFLICT DO NOTHING` + return existing | to write (MLY-019) |
 
@@ -116,9 +116,22 @@ The worker is **the same codebase in a separate process** (`python -m app.worker
 
 ## 9. Auth and sync boundaries (design only)
 
-- **Auth (MLY-015):** email one-time code + Google; short-lived access token + rotating refresh token tied to a device row. Sign in with Apple only when iOS ships.
+### Auth design v0.1 — PROPOSAL (accept or edit on Day 4, before any auth code)
+
+| Topic | Proposal |
+|---|---|
+| Login methods | E-mail one-time code and Google ID token. Apple only when iOS ships. **No passwords, no phone OTP.** |
+| One-time code | 6 digits, valid 10 minutes, at most 5 attempts (the database enforces `attempts <= max_attempts`), at most 5 codes per e-mail per hour, a new code invalidates the previous one. Stored as a SHA-256 hash. |
+| Access token | JWT, 15 minutes, carries user id and device id. Workspace access is looked up from membership, not put in the token. |
+| Refresh token | Opaque 256-bit random value, stored as a SHA-256 hash, valid 60 days, **rotating**: each refresh issues a new token in the same session and marks the old one `used_at` / `replaced_by`. **Presenting an already-used token is treated as theft:** revoke the whole session (`reuse_detected`). |
+| Device | One row per installed app or browser; revoking a device revokes its tokens. |
+| Development mode | Codes are printed to the server console ("console mailer"). A real e-mail provider is chosen before beta. |
+| Secrets | Signing key in `.env` for now (never committed). |
+
+**Already enforced by migration 0004:** hashes are exactly 32 bytes; a token's device must belong to the same user; revoked ⇔ has a reason; a code cannot exceed its attempts; e-mails are lower-case; a Google subject links to one user only.
+
 - **Sync (MLY-010 spike → MLY-022):** client-generated UUIDs; an outbox of idempotent writes; pull by a server sequence cursor; tombstones via `deleted_at`; balances never synced.
-- Both need new tables (devices, refresh tokens, change feed) → migration 0003 and later.
+- Auth tables exist (migration 0004). Sync tables (change feed, cursors) wait for the MLY-010 spike.
 - **Offline vs the no-overdraft rule (ADR-S1).** The database rejects any write that would overdraw an account. Two offline devices can each record a spend that is valid locally; when the second one syncs, the server answers 422. The sync design must say what happens to that already-recorded transaction (see §12). It must **never** be silently dropped.
 
 ## 10. Environments
@@ -163,4 +176,6 @@ The worker is **the same codebase in a separate process** (`python -m app.worker
 - **ADR-M1 — Local money storage.** **[ACCEPTED - Option A]** See §5. Recommended: Option A (TEXT decimal strings + client-side decimal arithmetic via Money module), confirmed by a 30–60 min spike in MLY-013.
 - **ADR-R1 — Repo layout.** **[ACCEPTED]** See §3. Recommended: move legacy Android files into `legacy-android/` in one git commit before `apps/mobile` starts.
 - **ADR-S1 — Offline overdraft conflicts.** **[ACKNOWLEDGED - Option A]** Decide formally in MLY-010 sync spike. Client enforces the floor locally; writes rejected by the server are flagged "needs attention" for the user to resolve, never silently dropped.
+- **ADR-A1 — Auth data model.** **[PROPOSED]** Session = a device's refresh-token chain (no sessions table); only hashes are stored; rotation with reuse detection (§9). Accept on Day 4.
+- **ADR-I1 — Legacy import.** **[PROPOSED]** A pure mapper (`app/legacy/mapper.py`) produces a reviewable plan with issues; ids are deterministic; scope is owner-only (D-19); goals and scheduled payments are counted but not imported until their tables exist. Accept on Day 4.
 - **ADR-L1 — Ledger edits.** **[ACCEPTED]** Editable + soft-delete + `version` bumping; audit log of previous values added later; **no rigid immutability**.

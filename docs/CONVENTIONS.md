@@ -1,7 +1,7 @@
-# Mulya — Data & API Conventions (v0.2 — errata over v0.1, accepted 14 October 2026)
+# Mulya — Data & API Conventions (v0.3 — Day 3 additions over accepted v0.2)
 
-Task: **MLY-007**. Status: v0.1 was accepted on 14 Oct 2026. **v0.2 fixes drift** between this document and
-`schema_v0.sql` / the Day 1 decisions (see "Changes in v0.2" at the end) and becomes binding when you commit it.
+Task: **MLY-007**. Status: v0.1 accepted 14 Oct 2026; v0.2 (drift fixes) accepted 16 Oct 2026. **v0.3 adds the rules that migrations 0003 and 0004
+enforce** (see "Changes in v0.3" at the end) and becomes binding when you commit it.
 Every rule below exists to prevent a specific defect found in the v2.26 Android code
 (finding IDs `CR-xx` refer to sheet `25_Codebase_Review`). If a rule is wrong for the product,
 change it **here first**, then change the code — never the other way round.
@@ -19,7 +19,7 @@ change it **here first**, then change the code — never the other way round.
 | **Multi-currency from launch** | Each account carries its own `currency_code` (ISO 4217, upper-case: `INR`, `USD`, `EUR`). A transaction inherits its account's currency. Cross-currency transfers carry an `fx_rate` on the `transfers` row. |
 | **Amounts are positive** | `amount > 0` always. Direction comes from `kind` (`income`, `expense`, `transfer_in`, `transfer_out`). Signed amount is computed as needed. |
 | **Upper bound** | `amount <= 100_000_000_000.00` (100 billion major units). |
-| **Decimals per currency** *(v0.2)* | The column allows 8 decimals (headroom for FX results), but a currency's own amounts never carry more than its exponent: INR/USD/EUR 2, JPY 0, KWD 3. **The API rejects extra digits** (it does not round). Schema v0 alone would store `450.123456789` rupees — verified. |
+| **Decimals per currency** *(v0.2)* | The column allows 8 decimals (headroom for FX results), but a currency's own amounts never carry more than its exponent: INR/USD/EUR 2, JPY 0, KWD 3. **Enforced twice:** the API rejects extra digits (it never rounds) and, since migration 0003, so does the database (trigger `amount_scale_per_currency`, SQLSTATE 23514). The exponent table is `currencies`; `CURRENCY_EXPONENT` in `app/core/money.py` mirrors it and a test fails if they differ. |
 | **Wire format** *(v0.2)* | JSON number → rejected; decimal string → accepted (`app/core/money.py`). Always return money through a response model: FastAPI's raw-dict encoder turns `Decimal` into a float. |
 | **Local (mobile) storage** *(v0.2)* | SQLite has no exact decimal type, and `SUM()` over text/real values is floating point. Store money as TEXT decimal strings, do all arithmetic in one `Money` module on a decimal library, and **never use SQL aggregates on money in SQLite**. (ADR-M1 in ARCHITECTURE.md; confirmed by a spike before mobile work starts.) |
 | **Formatting is a client concern** | The API returns decimal strings. One formatter per client turns `(amount_string, currency_code, locale)` into display text (`₹1,23,456.00` for `en-IN`). No `₹` literals scattered through screens (CR-12). |
@@ -30,6 +30,7 @@ change it **here first**, then change the code — never the other way round.
 - Every entity id is a **UUIDv7**. PostgreSQL 18 generates it with the built-in `uuidv7()`; clients may generate their own (needed for offline creation).
 - **Client-generated ids make creates idempotent**: retrying `INSERT` with the same id must be a no-op / return the existing row, never a duplicate.
 - The server never trusts a client id for anything except uniqueness: ownership always comes from the authenticated user + workspace.
+- **Exception — imports:** rows imported from a legacy backup get a deterministic UUIDv5 derived from the legacy id, so running an import twice cannot create duplicates. This applies to imported rows only.
 - Legacy Android integer ids are **never** reused as ids. If old data is ever imported, keep a `legacy_id → new uuid` map in an import log.
 
 ## 3. Time & dates  *(prevents CR-17)*
@@ -76,6 +77,13 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 9. **Every mutation that touches more than one row runs in one database transaction** and has a test (CR-04, CR-05).
 10. Categories are referenced by **id**, are typed (`income`/`expense`), and belong to one workspace (CR-08). Cross-workspace references are rejected by composite foreign keys.
 
+11. **Transfers** *(enforced since migration 0003)*. A transfer is one `transfers` row plus **exactly two live legs**: one `transfer_out`, one `transfer_in`, on **different** accounts.
+    - Same currency: `fx_rate` must be NULL and both amounts equal.
+    - Different currencies: `fx_rate` is required (units of destination per unit of source) and `|amount_in − amount_out × fx_rate| ≤ ½ × 10^−exponent(destination) + amount_out × 5·10⁻¹¹`, i.e. rounding to the destination's smallest unit plus the rate's own 10-decimal quantisation.
+    - A soft-deleted transfer has **no live legs**; delete or restore the transfer and both legs together.
+    - Checked at **COMMIT** (deferred constraint triggers), so write the transfer and both legs in **one** database transaction, in any order. Violation = SQLSTATE `23514`, constraint `transfer_consistent` → HTTP 422.
+12. **Currencies** *(since 0003)*. `currencies(code, exponent)` is the catalogue; `accounts.currency_code` and `workspaces.currency_code` reference it. An account's currency cannot change once it has any transaction (`account_currency_locked`).
+
 ## 6. Recurring rules  *(prevents CR-06)*
 
 - A rule stores `anchor_on` (first occurrence **and** the day-of-month to aim for), `frequency`, `interval_count`, optional `ends_on`, and its own `timezone`.
@@ -99,6 +107,15 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 - Profile = display name + timezone + locale. No date of birth, phone, city, state or gender unless a feature needs it and the user opts in.
 - Backups/exports are versioned, exclude photos by default, and may be passphrase-encrypted.
 
+## 9. Authentication data rules *(since migration 0004)*
+
+- **Secrets are never stored.** Only the SHA-256 hash (32 bytes) of a one-time login code or a refresh token is kept; the database refuses any other length.
+- **A session is a device's chain of rotating refresh tokens** (they share `session_id`). There is no separate sessions table.
+- A refresh token can only belong to a device of the **same user** (composite foreign key).
+- A revoked token always has a reason (`logout`, `reuse_detected`, `device_revoked`, `expired_cleanup`) and the reverse.
+- A one-time code can never be attempted more than `max_attempts` times (default 5), and its e-mail is stored lower-case.
+- Rotation, reuse detection, lifetimes and rate limits are **application rules** (ARCHITECTURE §9); the columns record what happened.
+
 ---
 
 ## Decisions taken with this document
@@ -113,11 +130,13 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 | 6 | Money in major units, `NUMERIC(20,8)`, decimal strings on the wire *(Day 1, owner decision)* | Integer minor units (paise) — rejected so storage matches display |
 | 7 | Multi-currency from launch (`accounts.currency_code`, `transfers.fx_rate`) *(Day 1)* | INR-only launch |
 | 8 | Overspending always blocked, database-enforced *(Day 1; hardened in v0.1)* | Per-account allow-negative flag |
+| 9 | Transfer integrity checked at COMMIT by deferred constraint triggers *(Day 3)* | Checking only in the API (any bug or script could bypass it) |
+| 10 | Session = refresh-token chain; no `sessions` table; secrets stored as hashes *(Day 3)* | Separate sessions table; storing tokens/codes in clear |
+| 11 | FX tolerance = half a destination unit + rate quantisation *(Day 3)* | Exact equality (rejects real bank-rounded amounts) |
 
 ## Open questions (answer when the feature is designed, not now)
 
 - **Ledger edits.** Schema v0.1 lets transactions be edited (every edit bumps `version`) and soft-deleted; nothing makes them immutable. Recommendation: keep editing (users expect it; the old app allowed it) and add an audit log of old values later. If you want a strictly immutable ledger, say so: it removes PATCH on amount/account and changes the API.
-- **Cross-currency transfers are not enforced yet.** `fx_rate` exists but nothing requires it when account currencies differ, or checks the two legs against it (verified: INR→USD 1,000 → 1,000,000 with `fx_rate` NULL is accepted). Planned as a database constraint under MLY-009; until then the API must reject it.
 - Do goals need their own table of envelopes or can an envelope be an account with `type = 'goal'`?
 - Attachments (receipts): object storage keys on `transactions`, or a separate `attachments` table?
 
@@ -131,3 +150,13 @@ Every synced table has `created_at`, `updated_at`, `deleted_at`, `version`.
 4. §7: removed the `_minor` suffix rule (obsolete after the major-unit decision).
 5. Decisions table: recorded the three Day 1 decisions that were missing.
 6. Open questions: resolved the fx question into a concrete gap; added the ledger-immutability question (the Day 1 EOD says "immutable ledger"; the schema does not implement that).
+
+---
+
+## Changes in v0.3 (review these)
+
+1. §1: *Decimals per currency* is now enforced by the database too, with a catalogue table and a drift test.
+2. §2: the imports exception (deterministic UUIDv5).
+3. §5.11–5.12: transfer integrity and the currency catalogue (closes gap I3).
+4. §9 (new): authentication data rules (migration 0004).
+5. Decisions 9–11 recorded; the resolved cross-currency open question removed.
